@@ -2,8 +2,6 @@ package com.eagleuno.app
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -22,7 +20,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -33,27 +30,18 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
-import coil.compose.AsyncImage
-import coil.decode.GifDecoder
-import coil.decode.ImageDecoderDecoder
-import coil.request.ImageRequest
 import com.eagleuno.app.ui.theme.MyApplicationTheme
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
-import java.util.ArrayDeque
+import kotlin.math.max
 
 enum class ThemeStyle(
     val title: String,
@@ -68,7 +56,6 @@ enum class ThemeStyle(
 enum class ScreenState {
     HOME,
     SPEEDOMETER,
-    SCREENSAVER,
     SETTINGS,
     THEMES,
     ABOUT
@@ -83,6 +70,10 @@ class MainActivity : ComponentActivity() {
         } catch (e: Throwable) {
             e.printStackTrace()
         }
+
+        // Transparência total da janela no Android
+        window.setBackgroundDrawableResource(android.R.color.transparent)
+        window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
 
         try {
             if (Build.VERSION.SDK_INT >= 34) {
@@ -99,7 +90,7 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF05080F)
+                    color = Color.Transparent
                 ) {
                     EagleUnoApp()
                 }
@@ -108,62 +99,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Componente para Reprodução Suave de GIFs (Totalmente seguro contra falhas)
-@Composable
-fun AnimatedGifImage(
-    gifResId: Int,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Fit
-) {
-    val context = LocalContext.current
-    var hasError by remember { mutableStateOf(false) }
-
-    if (hasError) {
-        Box(
-            modifier = modifier.background(Color(0xFF0F1724)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = contentDescription ?: "",
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
-        }
-    } else {
-        val imageLoader = remember(context) {
-            ImageLoader.Builder(context)
-                .components {
-                    if (Build.VERSION.SDK_INT >= 28) {
-                        add(ImageDecoderDecoder.Factory())
-                    } else {
-                        add(GifDecoder.Factory())
-                    }
-                }
-                .build()
-        }
-
-        val model = remember(gifResId, context) {
-            ImageRequest.Builder(context)
-                .data("android.resource://${context.packageName}/$gifResId")
-                .build()
-        }
-
-        AsyncImage(
-            model = model,
-            imageLoader = imageLoader,
-            contentDescription = contentDescription,
-            modifier = modifier,
-            contentScale = contentScale,
-            onError = { e ->
-                e.result.throwable.printStackTrace()
-                hasError = true
-            }
-        )
-    }
-}
-
-// Renderização limpa e segura da moldura do dispositivo
 @Composable
 fun EagleUnoApp() {
     val context = LocalContext.current
@@ -171,7 +106,6 @@ fun EagleUnoApp() {
     var currentScreen by remember { mutableStateOf(ScreenState.HOME) }
     var isRgbEnabled by remember { mutableStateOf(false) }
 
-    // Animação de Transição Mágica (Alinhamento perfeito com o Widget)
     var isAppVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         isAppVisible = true
@@ -189,19 +123,21 @@ fun EagleUnoApp() {
         label = "SeamlessScale"
     )
 
-    // Estado dos Botões Físicos
     var focusedIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(currentScreen) {
         focusedIndex = 0
     }
 
-    // Estados do Velocímetro e Distância
+    // Estados de Velocidade, Distância e Cronômetro de Direção
     var speedKmH by remember { mutableFloatStateOf(0f) }
     var distanceKm by remember { mutableFloatStateOf(0.00f) }
     var movingTimeMillis by remember { mutableLongStateOf(0L) }
+    var previousSpeed by remember { mutableFloatStateOf(0f) }
+    var accelerationRate by remember { mutableFloatStateOf(0f) }
 
-    // Cronômetro que RODA em Segundo Plano APENAS com Velocidade > 0.5 km/h
+    // Cronômetro que roda quando em movimento e PAUSA quando parado
+    // ZERA APENAS quando o usuário clica em "Zerar KM"
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
@@ -211,49 +147,51 @@ fun EagleUnoApp() {
         }
     }
 
-    val isAbove35 = speedKmH > 35f
-    val isMoving = speedKmH > 0.5f
-
-    // Animações de Cores
-    val infiniteTransition = rememberInfiniteTransition(label = "NeonGlow")
-
-    val breathingColor by infiniteTransition.animateColor(
-        initialValue = selectedTheme.primaryColor,
-        targetValue = Color(0xFF00E5FF),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "BreathingAnimation"
-    )
-
-    val rainbowColor by infiniteTransition.animateColor(
-        initialValue = Color(0xFFFF0033),
-        targetValue = Color(0xFF00E5FF),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 400, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "RainbowAnimation"
-    )
-
-    val redNeonColor by infiniteTransition.animateColor(
-        initialValue = Color(0xFFFF0033),
-        targetValue = Color(0xFFFF5566),
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 700, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "RedNeonAnimation"
-    )
-
-    val activeAccentColor = when {
-        isAbove35 -> redNeonColor
-        isMoving || isRgbEnabled -> rainbowColor
-        else -> breathingColor
+    // Monitoramento da aceleração e taxa de variação da velocidade
+    LaunchedEffect(speedKmH) {
+        accelerationRate = speedKmH - previousSpeed
+        previousSpeed = speedKmH
     }
 
-    // GPS Sensor Listener Seguro
+    val isMoving = speedKmH > 0.8f
+    val isAccelerating = isMoving && accelerationRate > 0.2f
+    val isDecelerating = isMoving && accelerationRate < -0.2f
+
+    // Frequência dinâmica da piscada estilo RPM de volante de corrida
+    val pulseDurationMillis = when {
+        isAccelerating -> {
+            val factor = (speedKmH * 5f + accelerationRate * 80f).toInt()
+            max(90, 800 - factor) // Pisca rápido ao acelerar forte
+        }
+        isDecelerating -> {
+            val factor = (speedKmH * 4f).toInt()
+            max(120, 700 - factor)
+        }
+        else -> 600
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "RPMNeonGlow")
+    val alphaGlow by infiniteTransition.animateFloat(
+        initialValue = 0.25f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = pulseDurationMillis, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "RPMAlphaGlow"
+    )
+
+    val redNeonColor = Color(0xFFFF0033).copy(alpha = alphaGlow)
+    val babyBlueNeonColor = Color(0xFF00F0FF).copy(alpha = alphaGlow)
+
+    val activeAccentColor = when {
+        isAccelerating -> redNeonColor
+        isDecelerating -> babyBlueNeonColor
+        isMoving || isRgbEnabled -> selectedTheme.primaryColor
+        else -> selectedTheme.primaryColor.copy(alpha = 0.7f)
+    }
+
+    // GPS Sensor Listener Seguro com Atualização Automática nos Widgets
     DisposableEffect(Unit) {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         val locationListener = object : LocationListener {
@@ -271,6 +209,10 @@ fun EagleUnoApp() {
                         }
                     }
                     lastLocation = location
+
+                    // Atualiza o Widget em tempo real sem precisar de cliques
+                    NormalWidgetProvider.updateAllWidgets(context, speedKmH, distanceKm)
+                    CoverScreenWidgetProvider.updateAllCoverWidgets(context, speedKmH)
                 } catch (e: Throwable) {
                     e.printStackTrace()
                 }
@@ -289,8 +231,8 @@ fun EagleUnoApp() {
             ) {
                 locationManager.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
-                    1000L,
-                    1f,
+                    500L,
+                    0.5f,
                     locationListener
                 )
             }
@@ -307,31 +249,30 @@ fun EagleUnoApp() {
         }
     }
 
+    // Navegação física dos botões
     fun onPhysicalLeftClick() {
         when (currentScreen) {
-            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 3) % 3
+            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 2) % 2
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex - 1 + 2) % 2
-            ScreenState.SCREENSAVER -> { currentScreen = ScreenState.HOME; focusedIndex = 1 }
-            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 4) % 4
+            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 3) % 3
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex - 1 + total) % total
             }
-            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 3 }
+            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 2 }
         }
     }
 
     fun onPhysicalRightClick() {
         when (currentScreen) {
-            ScreenState.HOME -> focusedIndex = (focusedIndex + 1) % 3
+            ScreenState.HOME -> focusedIndex = (focusedIndex + 1) % 2
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex + 1) % 2
-            ScreenState.SCREENSAVER -> { currentScreen = ScreenState.HOME; focusedIndex = 1 }
-            ScreenState.SETTINGS -> focusedIndex = (focusedIndex + 1) % 4
+            ScreenState.SETTINGS -> focusedIndex = (focusedIndex + 1) % 3
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex + 1) % total
             }
-            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 3 }
+            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 2 }
         }
     }
 
@@ -340,8 +281,7 @@ fun EagleUnoApp() {
             ScreenState.HOME -> {
                 when (focusedIndex) {
                     0 -> { currentScreen = ScreenState.SPEEDOMETER; focusedIndex = 0 }
-                    1 -> { currentScreen = ScreenState.SCREENSAVER; focusedIndex = 0 }
-                    2 -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 0 }
+                    1 -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 0 }
                 }
             }
             ScreenState.SPEEDOMETER -> {
@@ -351,21 +291,21 @@ fun EagleUnoApp() {
                 } else {
                     distanceKm = 0f
                     movingTimeMillis = 0L
+                    NormalWidgetProvider.updateAllWidgets(context, 0f, 0f)
+                    CoverScreenWidgetProvider.updateAllCoverWidgets(context, 0f)
                 }
             }
-            ScreenState.SCREENSAVER -> { currentScreen = ScreenState.HOME; focusedIndex = 1 }
             ScreenState.SETTINGS -> {
                 when (focusedIndex) {
-                    0 -> { currentScreen = ScreenState.HOME; focusedIndex = 2 }
-                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 }
-                    2 -> isRgbEnabled = !isRgbEnabled
-                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }
+                    0 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 }
+                    1 -> isRgbEnabled = !isRgbEnabled
+                    2 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }
                 }
             }
             ScreenState.THEMES -> {
                 if (focusedIndex == 0) {
                     currentScreen = ScreenState.SETTINGS
-                    focusedIndex = 1
+                    focusedIndex = 0
                 } else {
                     val themeIdx = focusedIndex - 1
                     if (themeIdx in ThemeStyle.entries.indices) {
@@ -373,7 +313,7 @@ fun EagleUnoApp() {
                     }
                 }
             }
-            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 3 }
+            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 2 }
         }
     }
 
@@ -411,6 +351,7 @@ fun EagleUnoApp() {
                     contentScale = ContentScale.Fit
                 )
 
+                // Telinha do Aparelho com Moldura Néon Reativa RPM
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -421,13 +362,13 @@ fun EagleUnoApp() {
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color(0xFF0C121D),
-                                    Color(0xFF05080F)
+                                    Color(0xFF0C121D).copy(alpha = 0.85f),
+                                    Color(0xFF05080F).copy(alpha = 0.85f)
                                 )
                             )
                         )
                         .border(
-                            width = 2.2.dp,
+                            width = 3.dp,
                             color = activeAccentColor,
                             shape = RoundedCornerShape(6.dp)
                         )
@@ -457,13 +398,8 @@ fun EagleUnoApp() {
                                 activeColor = activeAccentColor,
                                 focusedIndex = focusedIndex,
                                 onNavigate = { screen ->
-                                    when (screen) {
-                                        ScreenState.SPEEDOMETER -> focusedIndex = 0
-                                        ScreenState.SCREENSAVER -> focusedIndex = 0
-                                        ScreenState.SETTINGS -> focusedIndex = 0
-                                        else -> focusedIndex = 0
-                                    }
                                     currentScreen = screen
+                                    focusedIndex = 0
                                 }
                             )
 
@@ -480,15 +416,8 @@ fun EagleUnoApp() {
                                 onResetDistance = {
                                     distanceKm = 0f
                                     movingTimeMillis = 0L
-                                }
-                            )
-
-                            ScreenState.SCREENSAVER -> ScreensaverScreen(
-                                activeColor = activeAccentColor,
-                                focusedIndex = focusedIndex,
-                                onNavigateBack = {
-                                    currentScreen = ScreenState.HOME
-                                    focusedIndex = 1
+                                    NormalWidgetProvider.updateAllWidgets(context, 0f, 0f)
+                                    CoverScreenWidgetProvider.updateAllCoverWidgets(context, 0f)
                                 }
                             )
 
@@ -498,7 +427,7 @@ fun EagleUnoApp() {
                                 focusedIndex = focusedIndex,
                                 onNavigateBack = {
                                     currentScreen = ScreenState.HOME
-                                    focusedIndex = 2
+                                    focusedIndex = 1
                                 },
                                 onRgbToggle = { isRgbEnabled = !isRgbEnabled },
                                 onNavigate = { currentScreen = it }
@@ -509,7 +438,7 @@ fun EagleUnoApp() {
                                 focusedIndex = focusedIndex,
                                 onNavigateBack = {
                                     currentScreen = ScreenState.SETTINGS
-                                    focusedIndex = 1
+                                    focusedIndex = 0
                                 },
                                 onThemeSelect = { theme -> selectedTheme = theme }
                             )
@@ -518,13 +447,14 @@ fun EagleUnoApp() {
                                 activeColor = activeAccentColor,
                                 onNavigateBack = {
                                     currentScreen = ScreenState.SETTINGS
-                                    focusedIndex = 3
+                                    focusedIndex = 2
                                 }
                             )
                         }
                     }
                 }
 
+                // Botões físicos na parte inferior do aparelho
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -599,7 +529,7 @@ fun HomeScreen(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             MenuButton(
                 title = "🏎️ Velocímetro",
@@ -610,21 +540,52 @@ fun HomeScreen(
             )
 
             MenuButton(
-                title = "🎬 Tela de Descanso (GIF)",
-                subtitle = "Animação tática do personagem",
-                color = Color(0xFF00F0FF),
-                isFocused = focusedIndex == 1,
-                onClick = { onNavigate(ScreenState.SCREENSAVER) }
-            )
-
-            MenuButton(
                 title = "⚙️ Configurações",
                 subtitle = "Mudar moldura, efeito RGB & sobre",
                 color = activeColor,
-                isFocused = focusedIndex == 2,
+                isFocused = focusedIndex == 1,
                 onClick = { onNavigate(ScreenState.SETTINGS) }
             )
         }
+    }
+}
+
+@Composable
+fun MenuButton(
+    title: String,
+    subtitle: String,
+    color: Color,
+    isFocused: Boolean = false,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .background(if (isFocused) Color(0xFF1E2A3A) else Color(0xFF0F1623))
+            .border(
+                width = if (isFocused) 1.5.dp else 0.8.dp,
+                color = if (isFocused) Color(0xFFFFD700) else color,
+                shape = RoundedCornerShape(4.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = title,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isFocused) Color(0xFFFFD700) else color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = subtitle,
+            fontSize = 7.5.sp,
+            color = Color.Gray,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -638,22 +599,22 @@ fun CompactHeaderButton(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(20.dp)
-            .clip(RoundedCornerShape(3.dp))
+            .height(22.dp)
+            .clip(RoundedCornerShape(4.dp))
             .background(if (isFocused) Color(0xFF1C283A) else Color(0xFF0F1623))
             .border(
                 width = if (isFocused) 1.2.dp else 0.8.dp,
                 color = if (isFocused) Color(0xFFFFD700) else color,
-                shape = RoundedCornerShape(3.dp)
+                shape = RoundedCornerShape(4.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
         Text(
             text = title,
-            fontSize = 7.5.sp,
+            fontSize = 8.5.sp,
             fontWeight = FontWeight.Bold,
             color = if (isFocused) Color(0xFFFFD700) else color,
             maxLines = 1,
@@ -709,115 +670,89 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
+        // Painel do Velocímetro Enquadrado Perfeitamente
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .background(Color(0xFF080C14), RoundedCornerShape(4.dp))
-                .border(1.2.dp, activeColor, RoundedCornerShape(4.dp))
-                .padding(horizontal = 6.dp, vertical = 4.dp),
+                .background(Color(0xFF080C14), RoundedCornerShape(6.dp))
+                .border(1.5.dp, activeColor, RoundedCornerShape(6.dp))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Mostrador da Velocidade Aumentado
             Row(
                 verticalAlignment = Alignment.Bottom,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1.1f),
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = "${speedKmH.toInt()}",
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 66.sp, // Fonte da velocidade Aumentada
+                    fontWeight = FontWeight.Black,
                     color = activeColor,
                     letterSpacing = (-2).sp
                 )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
                     text = "km/h",
-                    fontSize = 13.sp,
+                    fontSize = 14.sp, // Fonte do km/h Aumentada
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 10.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
+            // Painel Lateral da Distância e Tempo (Enquadramento Calibrado sem cortes)
             Column(
-                horizontalAlignment = Alignment.End,
+                horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(3.dp))
+                    .weight(0.9f)
+                    .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xFF0F1726))
-                    .border(0.8.dp, activeColor.copy(alpha = 0.7f), RoundedCornerShape(3.dp))
-                    .padding(horizontal = 6.dp, vertical = 4.dp)
+                    .border(1.dp, activeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
                 Text(
                     text = "DISTÂNCIA",
-                    fontSize = 6.sp,
+                    fontSize = 7.5.sp, // Fonte da palavra Distância Aumentada
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "%.2f km".format(distanceKm),
-                    fontSize = 11.sp,
+                    fontSize = 13.sp, // Fonte da Distância Aumentada
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFFFD700)
+                    color = Color(0xFFFFD700),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = if (isMoving) "▶ TEMPO" else "⏸ PAUSADO",
-                    fontSize = 6.sp,
+                    fontSize = 7.5.sp, // Status do Tempo Aumentado
                     fontWeight = FontWeight.Bold,
-                    color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800)
+                    color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = formattedTime,
-                    fontSize = 10.sp,
+                    fontSize = 12.sp, // Fonte dos Números das Horas Aumentada
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF00E5FF)
+                    color = Color(0xFF00E5FF),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun ScreensaverScreen(
-    activeColor: Color,
-    focusedIndex: Int,
-    onNavigateBack: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        MenuButton(
-            title = "◀ Voltar ao Menu Principal",
-            subtitle = "Sair da Tela de Descanso",
-            color = Color(0xFFFFD700),
-            isFocused = focusedIndex == 0,
-            onClick = onNavigateBack
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xFF05080E))
-                .border(1.2.dp, activeColor, RoundedCornerShape(4.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            AnimatedGifImage(
-                gifResId = R.drawable.commando,
-                contentDescription = "Tela de Descanso GIF Animado",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit
-            )
         }
     }
 }
@@ -831,91 +766,46 @@ fun SettingsScreen(
     onRgbToggle: () -> Unit,
     onNavigate: (ScreenState) -> Unit
 ) {
-    val scrollState = rememberScrollState()
-
-    LaunchedEffect(focusedIndex) {
-        scrollState.animateScrollTo((focusedIndex * 32).coerceAtLeast(0))
-    }
-
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState),
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        MenuButton(
+        CompactHeaderButton(
             title = "◀ Voltar ao Menu Principal",
-            subtitle = "Retornar à tela inicial",
             color = Color(0xFFFFD700),
             isFocused = focusedIndex == 0,
             onClick = onNavigateBack
         )
 
-        MenuButton(
-            title = "🎨 Mudar Moldura do Aparelho",
-            subtitle = "Escolha a cor do corpo do dispositivo",
-            color = activeColor,
-            isFocused = focusedIndex == 1,
-            onClick = { onNavigate(ScreenState.THEMES) }
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(25.dp)
-                .background(
-                    if (isRgbEnabled) activeColor.copy(alpha = 0.2f)
-                    else if (focusedIndex == 2) Color(0xFF182436)
-                    else Color(0xFF101826),
-                    RoundedCornerShape(3.dp)
-                )
-                .border(
-                    width = if (isRgbEnabled || focusedIndex == 2) 1.2.dp else 0.8.dp,
-                    color = if (focusedIndex == 2) Color(0xFFFFD700) else if (isRgbEnabled) activeColor else Color(0xFF202E42),
-                    shape = RoundedCornerShape(3.dp)
-                )
-                .clickable { onRgbToggle() }
-                .padding(horizontal = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "🌈 Efeito de Luzes RGB",
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isRgbEnabled) activeColor else Color.White
-                )
-                Text(
-                    text = if (isRgbEnabled) "✨ Spectrum Neon Ativo" else "Animação de cores dinâmicas no painel",
-                    fontSize = 6.5.sp,
-                    color = if (isRgbEnabled) Color.LightGray else Color.Gray
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .background(
-                        if (isRgbEnabled) activeColor else Color(0xFF223044),
-                        RoundedCornerShape(2.dp)
-                    )
-                    .padding(horizontal = 4.dp, vertical = 1.dp)
-            ) {
-                Text(
-                    text = if (isRgbEnabled) "LIGADO" else "DESLIGADO",
-                    fontSize = 6.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isRgbEnabled) Color.Black else Color.Gray
-                )
-            }
-        }
+            MenuButton(
+                title = "🎨 Galeria de Molduras",
+                subtitle = "Escolha o estilo de borda do aparelho",
+                color = activeColor,
+                isFocused = focusedIndex == 1,
+                onClick = { onNavigate(ScreenState.THEMES) }
+            )
 
-        MenuButton(
-            title = "ℹ️ Sobre o Aplicativo",
-            subtitle = "Informações do sistema e apoio PayPal",
-            color = Color(0xFFA0B0C0),
-            isFocused = focusedIndex == 3,
-            onClick = { onNavigate(ScreenState.ABOUT) }
-        )
+            MenuButton(
+                title = if (isRgbEnabled) "🌈 Efeito RGB: [ATIVADO]" else "🌈 Efeito RGB: [DESATIVADO]",
+                subtitle = "Alterna o ciclo de cores brilhantes",
+                color = if (isRgbEnabled) Color(0xFF00FF66) else Color.Gray,
+                isFocused = focusedIndex == 2,
+                onClick = onRgbToggle
+            )
+
+            MenuButton(
+                title = "ℹ️ Sobre & Criador",
+                subtitle = "Informações do desenvolvedor e doações",
+                color = activeColor,
+                isFocused = focusedIndex == 3,
+                onClick = { onNavigate(ScreenState.ABOUT) }
+            )
+        }
     }
 }
 
@@ -926,87 +816,57 @@ fun ThemesGalleryScreen(
     onNavigateBack: () -> Unit,
     onThemeSelect: (ThemeStyle) -> Unit
 ) {
-    val scrollState = rememberScrollState()
-
-    LaunchedEffect(focusedIndex) {
-        scrollState.animateScrollTo((focusedIndex * 32).coerceAtLeast(0))
-    }
-
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState),
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        MenuButton(
-            title = "◀ Voltar para Configurações",
-            subtitle = "Retornar ao menu anterior",
+        CompactHeaderButton(
+            title = "◀ Voltar às Configurações",
             color = Color(0xFFFFD700),
             isFocused = focusedIndex == 0,
             onClick = onNavigateBack
         )
 
-        ThemeStyle.entries.forEachIndexed { index, theme ->
-            val itemIndex = index + 1
-            val isSelected = selectedTheme == theme
-            val isFocused = focusedIndex == itemIndex
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(
-                        if (isSelected) theme.primaryColor.copy(alpha = 0.25f)
-                        else if (isFocused) Color(0xFF1A2638)
-                        else Color(0xFF101724)
-                    )
-                    .border(
-                        width = if (isFocused || isSelected) 1.2.dp else 0.5.dp,
-                        color = if (isFocused) Color(0xFFFFD700) else if (isSelected) theme.primaryColor else Color(0xFF202C3D),
-                        shape = RoundedCornerShape(3.dp)
-                    )
-                    .clickable { onThemeSelect(theme) }
-                    .padding(3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Box(
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            ThemeStyle.entries.forEachIndexed { index, theme ->
+                val isSelected = selectedTheme == theme
+                val itemIndex = index + 1
+                val isFocused = focusedIndex == itemIndex
+
+                Row(
                     modifier = Modifier
-                        .size(38.dp, 24.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .border(0.5.dp, theme.primaryColor, RoundedCornerShape(2.dp))
-                ) {
-                    Image(
-                        painter = painterResource(id = theme.imageResId),
-                        contentDescription = theme.title,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(6.dp))
-
-                Text(
-                    text = theme.title,
-                    fontSize = 8.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.weight(1f)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .background(
-                            if (isSelected) theme.primaryColor else Color(0xFF1E2B3C),
-                            RoundedCornerShape(2.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (isFocused) Color(0xFF1E2A3A) else Color(0xFF0F1623))
+                        .border(
+                            width = if (isFocused) 1.5.dp else 0.8.dp,
+                            color = if (isFocused) Color(0xFFFFD700) else if (isSelected) Color(0xFF00FF66) else Color.Gray,
+                            shape = RoundedCornerShape(4.dp)
                         )
-                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                        .clickable { onThemeSelect(theme) }
+                        .padding(horizontal = 8.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (isSelected) "✔ Selecionado" else "Usar",
-                        fontSize = 7.sp,
+                        text = theme.title,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isSelected) Color.Black else Color.LightGray
+                        color = if (isSelected) Color(0xFF00FF66) else Color.White
                     )
+
+                    if (isSelected) {
+                        Text(
+                            text = "✓ ATIVO",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF00FF66)
+                        )
+                    }
                 }
             }
         }
@@ -1019,154 +879,67 @@ fun AboutScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-
-    fun openPayPal() {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.paypal.me/eagleuno")).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-    }
+    val paypalUrl = "https://www.paypal.com/donate/?hosted_button_id=REPB3R2VW4AVA"
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        MenuButton(
-            title = "◀ Voltar para Configurações",
-            subtitle = "Retornar ao menu anterior",
+        CompactHeaderButton(
+            title = "◀ Voltar",
             color = Color(0xFFFFD700),
-            isFocused = true,
+            isFocused = false,
             onClick = onNavigateBack
         )
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF0F1724), RoundedCornerShape(4.dp))
-                .border(0.5.dp, activeColor, RoundedCornerShape(4.dp))
-                .padding(4.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp, 50.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .border(0.5.dp, activeColor, RoundedCornerShape(3.dp))
-            ) {
-                AnimatedGifImage(
-                    gifResId = R.drawable.commando,
-                    contentDescription = "Eagle Uno Commando GIF",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column {
-                Text(
-                    text = "Eagle Uno v1.3",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = activeColor
-                )
-                Text(
-                    text = "Velocímetro GPS & Descanso",
-                    fontSize = 6.5.sp,
-                    color = Color.Gray
-                )
-            }
-        }
-
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xFF1A1608))
-                .border(0.8.dp, Color(0xFFFFD700), RoundedCornerShape(4.dp))
-                .clickable { openPayPal() }
-                .padding(5.dp)
+                .verticalScroll(rememberScrollState())
+                .background(Color(0xFF0F1623), RoundedCornerShape(6.dp))
+                .padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "💛 APOIE O PROJETO VIA PAYPAL (CLIQUE AQUI):",
-                fontSize = 6.5.sp,
-                color = Color(0xFFFFD700),
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "paypal.me/eagleuno 🔗",
-                fontSize = 9.sp,
-                color = Color(0xFF00F0FF),
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
-    }
-}
-
-@Composable
-fun MenuButton(
-    title: String,
-    subtitle: String,
-    color: Color,
-    isFocused: Boolean = false,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(25.dp)
-            .clip(RoundedCornerShape(3.dp))
-            .background(if (isFocused) Color(0xFF1A2638) else Color(0xFF0E1522))
-            .border(
-                width = if (isFocused) 1.2.dp else 0.8.dp,
-                color = if (isFocused) Color(0xFFFFD700) else color,
-                shape = RoundedCornerShape(3.dp)
-            )
-            .clickable { onClick() }
-            .padding(horizontal = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                fontSize = 8.sp,
+                text = "Eagle Uno v1.4",
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                color = Color(0xFF00F0FF)
             )
-            Text(
-                text = subtitle,
-                fontSize = 6.5.sp,
-                color = Color.Gray,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        Text(
-            text = if (isFocused) "👈 OK" else "▶",
-            fontSize = 7.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isFocused) Color(0xFFFFD700) else color
-        )
-    }
-}
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
-@Composable
-fun EagleUnoPreview() {
-    MyApplicationTheme {
-        EagleUnoApp()
+            Text(
+                text = "Desenvolvido por Eagle Uno Team",
+                fontSize = 8.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paypalUrl)).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC439)),
+                shape = RoundedCornerShape(6.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(28.dp)
+            ) {
+                Text(
+                    text = "Apoiar via PayPal",
+                    color = Color(0xFF003087),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp
+                )
+            }
+        }
     }
 }
