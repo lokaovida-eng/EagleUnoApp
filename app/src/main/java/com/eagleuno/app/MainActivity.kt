@@ -127,21 +127,22 @@ fun EagleUnoApp() {
         label = "SeamlessScale"
     )
 
-    // Estado do Foco de Navegação Instantânea
+    // Estado do Foco de Navegação nos Botões Físicos
     var focusedIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(currentScreen) {
         focusedIndex = 0
     }
 
-    // Estados de Velocidade, Distância e Cronômetro de Direção
+    // Estados de Velocidade, Distância e Horas Dirigidas
     var speedKmH by remember { mutableFloatStateOf(0f) }
     var distanceKm by remember { mutableFloatStateOf(0.00f) }
     var movingTimeMillis by remember { mutableLongStateOf(0L) }
     var previousSpeed by remember { mutableFloatStateOf(0f) }
     var accelerationRate by remember { mutableFloatStateOf(0f) }
 
-    // Cronômetro das Horas Dirigidas (Roda em movimento e congela ao parar, zera apenas no botão "Zerar KM")
+    // Cronômetro que RODA apenas em movimento (> 0.5 km/h) e PAUSA quando parado
+    // Zera SOMENTE quando o usuário clica em "Zerar KM"
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
@@ -151,7 +152,7 @@ fun EagleUnoApp() {
         }
     }
 
-    // Monitoramento da aceleração e taxa de variação da velocidade
+    // Monitoramento da aceleração e variação de velocidade
     LaunchedEffect(speedKmH) {
         accelerationRate = speedKmH - previousSpeed
         previousSpeed = speedKmH
@@ -252,13 +253,14 @@ fun EagleUnoApp() {
         }
     }
 
-    // Navegação Física Instantânea com Feedback Háptico (Vibração)
+    // Resposta de Vibração Tátil (Feedback Háptico)
     fun triggerHaptic() {
         try {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         } catch (_: Exception) {}
     }
 
+    // Lógica Correta de Seleção de Menus com os Botões Físicos
     fun onPhysicalLeftClick() {
         triggerHaptic()
         when (currentScreen) {
@@ -707,7 +709,7 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Painel do Velocímetro Enquadrado Perfeitamente com Horas Dirigidas
+        // Painel do Velocímetro com Horas Dirigidas Destacadas e Totalmente Visíveis
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -726,7 +728,7 @@ fun SpeedometerScreen(
             ) {
                 Text(
                     text = "${speedKmH.toInt()}",
-                    fontSize = 62.sp, // Fonte da velocidade
+                    fontSize = 62.sp,
                     fontWeight = FontWeight.Black,
                     color = activeColor,
                     letterSpacing = (-2).sp
@@ -734,7 +736,7 @@ fun SpeedometerScreen(
                 Spacer(modifier = Modifier.width(2.dp))
                 Text(
                     text = "km/h",
-                    fontSize = 13.sp, // Unidade km/h
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -743,7 +745,7 @@ fun SpeedometerScreen(
 
             Spacer(modifier = Modifier.width(4.dp))
 
-            // Painel Lateral de Distância e Horas Dirigidas (100% Enquadrado sem Cortes)
+            // Painel Lateral da Distância e Horas Dirigidas (Dedicado e Sem Sobreposição)
             Column(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center,
@@ -781,7 +783,7 @@ fun SpeedometerScreen(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                // HORAS DIRIGIDAS RESTAURADAS E TOTALMENTE ENQUADRADAS
+                // HORAS DIRIGIDAS RESTAURADAS E TOTALMENTE VISÍVEIS
                 Text(
                     text = formattedTime,
                     fontSize = 11.5.sp,
@@ -926,7 +928,7 @@ fun AboutScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         CompactHeaderButton(
-            title = "◀ Voltar",
+            title = "◀ Voltar ao Menu Principal",
             color = Color(0xFFFFD700),
             isFocused = focusedIndex == 0,
             onClick = onNavigateBack
