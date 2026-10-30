@@ -31,8 +31,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -102,6 +104,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun EagleUnoApp() {
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+
     var selectedTheme by remember { mutableStateOf(ThemeStyle.VERMELHO_METAL) }
     var currentScreen by remember { mutableStateOf(ScreenState.HOME) }
     var isRgbEnabled by remember { mutableStateOf(false) }
@@ -113,16 +117,17 @@ fun EagleUnoApp() {
 
     val alphaAnim by animateFloatAsState(
         targetValue = if (isAppVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
         label = "SeamlessAlpha"
     )
 
     val scaleAnim by animateFloatAsState(
-        targetValue = if (isAppVisible) 1f else 0.97f,
-        animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing),
+        targetValue = if (isAppVisible) 1f else 0.98f,
+        animationSpec = tween(durationMillis = 150, easing = FastOutSlowInEasing),
         label = "SeamlessScale"
     )
 
+    // Estado do Foco de Navegação Instantânea
     var focusedIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(currentScreen) {
@@ -136,8 +141,7 @@ fun EagleUnoApp() {
     var previousSpeed by remember { mutableFloatStateOf(0f) }
     var accelerationRate by remember { mutableFloatStateOf(0f) }
 
-    // Cronômetro que roda quando em movimento e PAUSA quando parado
-    // ZERA APENAS quando o usuário clica em "Zerar KM"
+    // Cronômetro das Horas Dirigidas (Roda em movimento e congela ao parar, zera apenas no botão "Zerar KM")
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
@@ -161,7 +165,7 @@ fun EagleUnoApp() {
     val pulseDurationMillis = when {
         isAccelerating -> {
             val factor = (speedKmH * 5f + accelerationRate * 80f).toInt()
-            max(90, 800 - factor) // Pisca rápido ao acelerar forte
+            max(90, 800 - factor)
         }
         isDecelerating -> {
             val factor = (speedKmH * 4f).toInt()
@@ -188,7 +192,7 @@ fun EagleUnoApp() {
         isAccelerating -> redNeonColor
         isDecelerating -> babyBlueNeonColor
         isMoving || isRgbEnabled -> selectedTheme.primaryColor
-        else -> selectedTheme.primaryColor.copy(alpha = 0.7f)
+        else -> selectedTheme.primaryColor.copy(alpha = 0.8f)
     }
 
     // GPS Sensor Listener Seguro com Atualização Automática nos Widgets
@@ -210,7 +214,6 @@ fun EagleUnoApp() {
                     }
                     lastLocation = location
 
-                    // Atualiza o Widget em tempo real sem precisar de cliques
                     NormalWidgetProvider.updateAllWidgets(context, speedKmH, distanceKm)
                     CoverScreenWidgetProvider.updateAllCoverWidgets(context, speedKmH)
                 } catch (e: Throwable) {
@@ -249,39 +252,49 @@ fun EagleUnoApp() {
         }
     }
 
-    // Navegação física dos botões
+    // Navegação Física Instantânea com Feedback Háptico (Vibração)
+    fun triggerHaptic() {
+        try {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        } catch (_: Exception) {}
+    }
+
     fun onPhysicalLeftClick() {
+        triggerHaptic()
         when (currentScreen) {
-            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 2) % 2
+            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 3) % 3
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex - 1 + 2) % 2
             ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 3) % 3
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex - 1 + total) % total
             }
-            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 2 }
+            ScreenState.ABOUT -> focusedIndex = 0
         }
     }
 
     fun onPhysicalRightClick() {
+        triggerHaptic()
         when (currentScreen) {
-            ScreenState.HOME -> focusedIndex = (focusedIndex + 1) % 2
+            ScreenState.HOME -> focusedIndex = (focusedIndex + 1) % 3
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex + 1) % 2
             ScreenState.SETTINGS -> focusedIndex = (focusedIndex + 1) % 3
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex + 1) % total
             }
-            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 2 }
+            ScreenState.ABOUT -> focusedIndex = 0
         }
     }
 
     fun onPhysicalCenterClick() {
+        triggerHaptic()
         when (currentScreen) {
             ScreenState.HOME -> {
                 when (focusedIndex) {
                     0 -> { currentScreen = ScreenState.SPEEDOMETER; focusedIndex = 0 }
                     1 -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 0 }
+                    2 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }
                 }
             }
             ScreenState.SPEEDOMETER -> {
@@ -313,7 +326,7 @@ fun EagleUnoApp() {
                     }
                 }
             }
-            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 2 }
+            ScreenState.ABOUT -> { currentScreen = ScreenState.HOME; focusedIndex = 0 }
         }
     }
 
@@ -351,7 +364,7 @@ fun EagleUnoApp() {
                     contentScale = ContentScale.Fit
                 )
 
-                // Telinha do Aparelho com Moldura Néon Reativa RPM
+                // Telinha do Aparelho com Moldura Néon Reativa
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -362,8 +375,8 @@ fun EagleUnoApp() {
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color(0xFF0C121D).copy(alpha = 0.85f),
-                                    Color(0xFF05080F).copy(alpha = 0.85f)
+                                    Color(0xFF0C121D).copy(alpha = 0.88f),
+                                    Color(0xFF05080F).copy(alpha = 0.88f)
                                 )
                             )
                         )
@@ -398,6 +411,7 @@ fun EagleUnoApp() {
                                 activeColor = activeAccentColor,
                                 focusedIndex = focusedIndex,
                                 onNavigate = { screen ->
+                                    triggerHaptic()
                                     currentScreen = screen
                                     focusedIndex = 0
                                 }
@@ -410,10 +424,12 @@ fun EagleUnoApp() {
                                 activeColor = activeAccentColor,
                                 focusedIndex = focusedIndex,
                                 onNavigateBack = {
+                                    triggerHaptic()
                                     currentScreen = ScreenState.HOME
                                     focusedIndex = 0
                                 },
                                 onResetDistance = {
+                                    triggerHaptic()
                                     distanceKm = 0f
                                     movingTimeMillis = 0L
                                     NormalWidgetProvider.updateAllWidgets(context, 0f, 0f)
@@ -426,35 +442,48 @@ fun EagleUnoApp() {
                                 activeColor = activeAccentColor,
                                 focusedIndex = focusedIndex,
                                 onNavigateBack = {
+                                    triggerHaptic()
                                     currentScreen = ScreenState.HOME
                                     focusedIndex = 1
                                 },
-                                onRgbToggle = { isRgbEnabled = !isRgbEnabled },
-                                onNavigate = { currentScreen = it }
+                                onRgbToggle = {
+                                    triggerHaptic()
+                                    isRgbEnabled = !isRgbEnabled
+                                },
+                                onNavigate = {
+                                    triggerHaptic()
+                                    currentScreen = it
+                                }
                             )
 
                             ScreenState.THEMES -> ThemesGalleryScreen(
                                 selectedTheme = selectedTheme,
                                 focusedIndex = focusedIndex,
                                 onNavigateBack = {
+                                    triggerHaptic()
                                     currentScreen = ScreenState.SETTINGS
                                     focusedIndex = 0
                                 },
-                                onThemeSelect = { theme -> selectedTheme = theme }
+                                onThemeSelect = { theme ->
+                                    triggerHaptic()
+                                    selectedTheme = theme
+                                }
                             )
 
                             ScreenState.ABOUT -> AboutScreen(
                                 activeColor = activeAccentColor,
+                                focusedIndex = focusedIndex,
                                 onNavigateBack = {
-                                    currentScreen = ScreenState.SETTINGS
-                                    focusedIndex = 2
+                                    triggerHaptic()
+                                    currentScreen = ScreenState.HOME
+                                    focusedIndex = 0
                                 }
                             )
                         }
                     }
                 }
 
-                // Botões físicos na parte inferior do aparelho
+                // Botões físicos com resposta de toque e vibração instantânea
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -473,7 +502,7 @@ fun EagleUnoApp() {
                     ) {
                         Text(
                             text = "◀",
-                            fontSize = 8.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = activeAccentColor
                         )
@@ -489,7 +518,7 @@ fun EagleUnoApp() {
                     ) {
                         Text(
                             text = "OK",
-                            fontSize = 8.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF00FF66)
                         )
@@ -505,7 +534,7 @@ fun EagleUnoApp() {
                     ) {
                         Text(
                             text = "▶",
-                            fontSize = 8.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = activeAccentColor
                         )
@@ -529,11 +558,11 @@ fun HomeScreen(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             MenuButton(
                 title = "🏎️ Velocímetro",
-                subtitle = "Medição de velocidade e distância percorrida",
+                subtitle = "Medição de velocidade e distância",
                 color = activeColor,
                 isFocused = focusedIndex == 0,
                 onClick = { onNavigate(ScreenState.SPEEDOMETER) }
@@ -541,10 +570,18 @@ fun HomeScreen(
 
             MenuButton(
                 title = "⚙️ Configurações",
-                subtitle = "Mudar moldura, efeito RGB & sobre",
+                subtitle = "Mudar moldura e efeito RGB",
                 color = activeColor,
                 isFocused = focusedIndex == 1,
                 onClick = { onNavigate(ScreenState.SETTINGS) }
+            )
+
+            MenuButton(
+                title = "ℹ️ Sobre & Criador",
+                subtitle = "Doação PayPal e Desenvolvedor",
+                color = Color(0xFF00F0FF),
+                isFocused = focusedIndex == 2,
+                onClick = { onNavigate(ScreenState.ABOUT) }
             )
         }
     }
@@ -569,11 +606,11 @@ fun MenuButton(
                 shape = RoundedCornerShape(4.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 5.dp)
     ) {
         Text(
             text = title,
-            fontSize = 11.sp,
+            fontSize = 10.5.sp,
             fontWeight = FontWeight.Bold,
             color = if (isFocused) Color(0xFFFFD700) else color,
             maxLines = 1,
@@ -581,7 +618,7 @@ fun MenuButton(
         )
         Text(
             text = subtitle,
-            fontSize = 7.5.sp,
+            fontSize = 7.sp,
             color = Color.Gray,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -670,56 +707,56 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Painel do Velocímetro Enquadrado Perfeitamente
+        // Painel do Velocímetro Enquadrado Perfeitamente com Horas Dirigidas
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .background(Color(0xFF080C14), RoundedCornerShape(6.dp))
                 .border(1.5.dp, activeColor, RoundedCornerShape(6.dp))
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Mostrador da Velocidade Aumentado
+            // Mostrador Principal da Velocidade Aumentado
             Row(
                 verticalAlignment = Alignment.Bottom,
-                modifier = Modifier.weight(1.1f),
+                modifier = Modifier.weight(1.05f),
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = "${speedKmH.toInt()}",
-                    fontSize = 66.sp, // Fonte da velocidade Aumentada
+                    fontSize = 62.sp, // Fonte da velocidade
                     fontWeight = FontWeight.Black,
                     color = activeColor,
                     letterSpacing = (-2).sp
                 )
-                Spacer(modifier = Modifier.width(3.dp))
+                Spacer(modifier = Modifier.width(2.dp))
                 Text(
                     text = "km/h",
-                    fontSize = 14.sp, // Fonte do km/h Aumentada
+                    fontSize = 13.sp, // Unidade km/h
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    modifier = Modifier.padding(bottom = 10.dp)
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
-            // Painel Lateral da Distância e Tempo (Enquadramento Calibrado sem cortes)
+            // Painel Lateral de Distância e Horas Dirigidas (100% Enquadrado sem Cortes)
             Column(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    .weight(0.9f)
+                    .weight(0.95f)
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xFF0F1726))
                     .border(1.dp, activeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "DISTÂNCIA",
-                    fontSize = 7.5.sp, // Fonte da palavra Distância Aumentada
+                    fontSize = 7.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray,
                     maxLines = 1,
@@ -727,26 +764,27 @@ fun SpeedometerScreen(
                 )
                 Text(
                     text = "%.2f km".format(distanceKm),
-                    fontSize = 13.sp, // Fonte da Distância Aumentada
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFFFFD700),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
-                    text = if (isMoving) "▶ TEMPO" else "⏸ PAUSADO",
-                    fontSize = 7.5.sp, // Status do Tempo Aumentado
+                    text = if (isMoving) "▶ DIRIGINDO" else "⏸ PAUSADO",
+                    fontSize = 7.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                // HORAS DIRIGIDAS RESTAURADAS E TOTALMENTE ENQUADRADAS
                 Text(
                     text = formattedTime,
-                    fontSize = 12.sp, // Fonte dos Números das Horas Aumentada
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF00E5FF),
                     maxLines = 1,
@@ -876,6 +914,7 @@ fun ThemesGalleryScreen(
 @Composable
 fun AboutScreen(
     activeColor: Color,
+    focusedIndex: Int,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -889,7 +928,7 @@ fun AboutScreen(
         CompactHeaderButton(
             title = "◀ Voltar",
             color = Color(0xFFFFD700),
-            isFocused = false,
+            isFocused = focusedIndex == 0,
             onClick = onNavigateBack
         )
 
