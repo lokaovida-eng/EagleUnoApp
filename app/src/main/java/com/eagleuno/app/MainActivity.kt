@@ -268,13 +268,13 @@ fun EagleUnoApp() {
         } catch (_: Exception) {}
     }
 
-    // Navegação dos Botões Físicos Corrigida
+    // Navegação dos Botões Físicos
     fun onPhysicalLeftClick() {
         triggerHaptic()
         when (currentScreen) {
-            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 2) % 2 // HOME tem 2 itens (Velocímetro e Configurações)
+            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 2) % 2 // 2 Opções na Home
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex - 1 + 2) % 2
-            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 4) % 4 // SETTINGS tem 4 itens (Voltar, Galeria, RGB, Sobre)
+            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 4) % 4 // 4 Opções nas Configurações
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex - 1 + total) % total
@@ -555,7 +555,7 @@ fun EagleUnoApp() {
     }
 }
 
-// Menu Principal Enquadrado com 2 Opções Principais Perfeitas
+// Menu Principal Enquadrado: 1. Velocímetro | 2. Configurações
 @Composable
 fun HomeScreen(
     activeColor: Color,
@@ -569,7 +569,7 @@ fun HomeScreen(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             MenuButton(
                 title = "🏎️ Velocímetro",
@@ -580,8 +580,8 @@ fun HomeScreen(
             )
 
             MenuButton(
-                title = "⚙️ Configurações & Sobre",
-                subtitle = "Molduras, efeito RGB, criador e doação",
+                title = "⚙️ Configurações", // TEXTO AJUSTADO: Apenas "Configurações"
+                subtitle = "Molduras, efeito RGB e sobre o criador",
                 color = Color(0xFF00F0FF),
                 isFocused = focusedIndex == 1,
                 onClick = { onNavigate(ScreenState.SETTINGS) }
@@ -613,7 +613,7 @@ fun MenuButton(
     ) {
         Text(
             text = title,
-            fontSize = 10.5.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = if (isFocused) Color(0xFFFFD700) else color,
             maxLines = 1,
@@ -621,7 +621,7 @@ fun MenuButton(
         )
         Text(
             text = subtitle,
-            fontSize = 7.sp,
+            fontSize = 7.5.sp,
             color = Color.LightGray,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -710,7 +710,7 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Painel do Velocímetro: Velocidade AUMENTADA + Distância e Horas na Lateral DIREITA
+        // Painel do Velocímetro com Horas Dirigidas e Distância no Lado DIREITO
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -721,7 +721,6 @@ fun SpeedometerScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // LADO ESQUERDO/CENTRO: Número da Velocidade AUMENTADO para 76sp
             Row(
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.weight(1.05f),
@@ -746,7 +745,6 @@ fun SpeedometerScreen(
 
             Spacer(modifier = Modifier.width(4.dp))
 
-            // LADO DIREITO: Painel Lateral com DISTÂNCIA + TEMPO DIRIGIDO (Enquadramento Perfeito)
             Column(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.SpaceEvenly,
@@ -800,6 +798,7 @@ fun SpeedometerScreen(
     }
 }
 
+// Menu de Configurações com a Opção "Sobre & Criador" 100% Visível e Acessível
 @Composable
 fun SettingsScreen(
     isRgbEnabled: Boolean,
@@ -841,6 +840,7 @@ fun SettingsScreen(
                 onClick = onRgbToggle
             )
 
+            // SEÇÃO SOBRE & CRIADOR GARANTIDA DENTRO DAS CONFIGURAÇÕES
             MenuButton(
                 title = "ℹ️ Sobre & Criador",
                 subtitle = "Informações do desenvolvedor e doações",
@@ -931,7 +931,7 @@ fun AboutScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         CompactHeaderButton(
-            title = "◀ Voltar",
+            title = "◀ Voltar às Configurações",
             color = Color(0xFFFFD700),
             isFocused = focusedIndex == 0,
             onClick = onNavigateBack
