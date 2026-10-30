@@ -142,7 +142,7 @@ fun EagleUnoApp() {
     var accelerationRate by remember { mutableFloatStateOf(0f) }
 
     // Cronômetro que RODA em movimento e PAUSA quando parado
-    // ZERA SOMENTE no botão "Zerar KM"
+    // ZERA SOMENTE quando o usuário clica em "Zerar KM"
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
@@ -268,13 +268,13 @@ fun EagleUnoApp() {
         } catch (_: Exception) {}
     }
 
-    // Navegação dos Botões Físicos
+    // Navegação dos Botões Físicos Corrigida
     fun onPhysicalLeftClick() {
         triggerHaptic()
         when (currentScreen) {
-            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 3) % 3
+            ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 2) % 2 // HOME tem 2 itens (Velocímetro e Configurações)
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex - 1 + 2) % 2
-            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 4) % 4
+            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 4) % 4 // SETTINGS tem 4 itens (Voltar, Galeria, RGB, Sobre)
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex - 1 + total) % total
@@ -286,7 +286,7 @@ fun EagleUnoApp() {
     fun onPhysicalRightClick() {
         triggerHaptic()
         when (currentScreen) {
-            ScreenState.HOME -> focusedIndex = (focusedIndex + 1) % 3
+            ScreenState.HOME -> focusedIndex = (focusedIndex + 1) % 2
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex + 1) % 2
             ScreenState.SETTINGS -> focusedIndex = (focusedIndex + 1) % 4
             ScreenState.THEMES -> {
@@ -304,7 +304,6 @@ fun EagleUnoApp() {
                 when (focusedIndex) {
                     0 -> { currentScreen = ScreenState.SPEEDOMETER; focusedIndex = 0 }
                     1 -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 0 }
-                    2 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }
                 }
             }
             ScreenState.SPEEDOMETER -> {
@@ -320,10 +319,10 @@ fun EagleUnoApp() {
             }
             ScreenState.SETTINGS -> {
                 when (focusedIndex) {
-                    0 -> { currentScreen = ScreenState.HOME; focusedIndex = 1 }
-                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 }
-                    2 -> { isRgbEnabled = !isRgbEnabled }
-                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }
+                    0 -> { currentScreen = ScreenState.HOME; focusedIndex = 1 } // Voltar ao Menu Principal
+                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 } // Galeria de Molduras
+                    2 -> { isRgbEnabled = !isRgbEnabled }                          // Efeito RGB
+                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }  // Sobre & Criador
                 }
             }
             ScreenState.THEMES -> {
@@ -337,7 +336,7 @@ fun EagleUnoApp() {
                     }
                 }
             }
-            ScreenState.ABOUT -> { currentScreen = ScreenState.HOME; focusedIndex = 0 }
+            ScreenState.ABOUT -> { currentScreen = ScreenState.SETTINGS; focusedIndex = 3 }
         }
     }
 
@@ -486,8 +485,8 @@ fun EagleUnoApp() {
                                 focusedIndex = focusedIndex,
                                 onNavigateBack = {
                                     triggerHaptic()
-                                    currentScreen = ScreenState.HOME
-                                    focusedIndex = 0
+                                    currentScreen = ScreenState.SETTINGS
+                                    focusedIndex = 3
                                 }
                             )
                         }
@@ -556,6 +555,7 @@ fun EagleUnoApp() {
     }
 }
 
+// Menu Principal Enquadrado com 2 Opções Principais Perfeitas
 @Composable
 fun HomeScreen(
     activeColor: Color,
@@ -569,7 +569,7 @@ fun HomeScreen(
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             MenuButton(
                 title = "🏎️ Velocímetro",
@@ -580,19 +580,11 @@ fun HomeScreen(
             )
 
             MenuButton(
-                title = "⚙️ Configurações",
-                subtitle = "Mudar moldura e efeito RGB",
-                color = activeColor,
+                title = "⚙️ Configurações & Sobre",
+                subtitle = "Molduras, efeito RGB, criador e doação",
+                color = Color(0xFF00F0FF),
                 isFocused = focusedIndex == 1,
                 onClick = { onNavigate(ScreenState.SETTINGS) }
-            )
-
-            MenuButton(
-                title = "ℹ️ Sobre & Criador",
-                subtitle = "Doação PayPal e Desenvolvedor",
-                color = Color(0xFF00F0FF),
-                isFocused = focusedIndex == 2,
-                onClick = { onNavigate(ScreenState.ABOUT) }
             )
         }
     }
@@ -617,7 +609,7 @@ fun MenuButton(
                 shape = RoundedCornerShape(4.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 5.dp)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Text(
             text = title,
@@ -637,7 +629,6 @@ fun MenuButton(
     }
 }
 
-// Botões Superiores Compactos ("Voltar" e "Zerar KM")
 @Composable
 fun CompactHeaderButton(
     title: String,
@@ -648,7 +639,7 @@ fun CompactHeaderButton(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(18.dp) // Reduzido para dar mais espaço ao velocímetro
+            .height(18.dp)
             .clip(RoundedCornerShape(3.dp))
             .background(if (isFocused) Color(0xFF1C283A) else Color(0xFF0F1623))
             .border(
@@ -693,7 +684,6 @@ fun SpeedometerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Cabeçalho Superior Compacto Reduzido
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -720,7 +710,7 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Painel Principal: Velocidade AUMENTADA no Centro + Distância e Horas na Lateral DIREITA
+        // Painel do Velocímetro: Velocidade AUMENTADA + Distância e Horas na Lateral DIREITA
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -731,7 +721,7 @@ fun SpeedometerScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // LADO ESQUERDO/CENTRO: Número da Velocidade AUMENTADO para Máxima Visibilidade
+            // LADO ESQUERDO/CENTRO: Número da Velocidade AUMENTADO para 76sp
             Row(
                 verticalAlignment = Alignment.Bottom,
                 modifier = Modifier.weight(1.05f),
@@ -739,7 +729,7 @@ fun SpeedometerScreen(
             ) {
                 Text(
                     text = "${speedKmH.toInt()}",
-                    fontSize = 76.sp, // VELOCIDADE AUMENTADA
+                    fontSize = 76.sp,
                     fontWeight = FontWeight.Black,
                     color = activeColor,
                     letterSpacing = (-3).sp
@@ -756,7 +746,7 @@ fun SpeedometerScreen(
 
             Spacer(modifier = Modifier.width(4.dp))
 
-            // LADO DIREITO: Painel Lateral com DISTÂNCIA + TEMPO DIRIGIDO (Colocado na Direita)
+            // LADO DIREITO: Painel Lateral com DISTÂNCIA + TEMPO DIRIGIDO (Enquadramento Perfeito)
             Column(
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.SpaceEvenly,
@@ -833,7 +823,7 @@ fun SettingsScreen(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             MenuButton(
                 title = "🎨 Galeria de Molduras",
@@ -854,7 +844,7 @@ fun SettingsScreen(
             MenuButton(
                 title = "ℹ️ Sobre & Criador",
                 subtitle = "Informações do desenvolvedor e doações",
-                color = activeColor,
+                color = Color(0xFF00F0FF),
                 isFocused = focusedIndex == 3,
                 onClick = { onNavigate(ScreenState.ABOUT) }
             )
@@ -883,7 +873,7 @@ fun ThemesGalleryScreen(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             ThemeStyle.entries.forEachIndexed { index, theme ->
                 val isSelected = selectedTheme == theme
@@ -901,13 +891,13 @@ fun ThemesGalleryScreen(
                             shape = RoundedCornerShape(4.dp)
                         )
                         .clickable { onThemeSelect(theme) }
-                        .padding(horizontal = 8.dp, vertical = 5.dp),
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
                         text = theme.title,
-                        fontSize = 10.sp,
+                        fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (isSelected) Color(0xFF00FF66) else Color.White
                     )
@@ -915,7 +905,7 @@ fun ThemesGalleryScreen(
                     if (isSelected) {
                         Text(
                             text = "✓ ATIVO",
-                            fontSize = 8.sp,
+                            fontSize = 7.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF00FF66)
                         )
@@ -941,7 +931,7 @@ fun AboutScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         CompactHeaderButton(
-            title = "◀ Voltar ao Menu Principal",
+            title = "◀ Voltar",
             color = Color(0xFFFFD700),
             isFocused = focusedIndex == 0,
             onClick = onNavigateBack
@@ -959,7 +949,7 @@ fun AboutScreen(
                 painter = painterResource(id = R.drawable.commando),
                 contentDescription = "Commando Soldier Animation",
                 modifier = Modifier
-                    .size(45.dp)
+                    .size(42.dp)
                     .clip(RoundedCornerShape(6.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -968,7 +958,7 @@ fun AboutScreen(
 
             Text(
                 text = "Eagle Uno v1.4",
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF00F0FF)
             )
