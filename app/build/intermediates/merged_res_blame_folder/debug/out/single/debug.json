@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.eagleuno.app-merged_res-40:/layout_widget_cover_layout.xml.flat",
+        "source": "com.eagleuno.app-main-42:/layout/widget_cover_layout.xml"
+    },
+    {
+        "merged": "com.eagleuno.app-merged_res-40:/layout_widget_normal_layout.xml.flat",
+        "source": "com.eagleuno.app-main-42:/layout/widget_normal_layout.xml"
+    }
+]

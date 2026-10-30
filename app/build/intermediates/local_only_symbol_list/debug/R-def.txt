@@ -1,0 +1,11 @@
+R_DEF: Internal format may change without notice
+local
+color transparent
+id tv_cover_speed
+id tv_cover_unit
+id tv_widget_distance
+id tv_widget_speed
+id tv_widget_unit
+layout widget_cover_layout
+layout widget_normal_layout
+style Theme.Transparent
