@@ -127,7 +127,6 @@ fun EagleUnoApp() {
         label = "SeamlessScale"
     )
 
-    // Estado do Foco de Navegação nos Botões Físicos
     var focusedIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(currentScreen) {
@@ -141,8 +140,8 @@ fun EagleUnoApp() {
     var previousSpeed by remember { mutableFloatStateOf(0f) }
     var accelerationRate by remember { mutableFloatStateOf(0f) }
 
-    // Cronômetro que RODA apenas em movimento (> 0.5 km/h) e PAUSA quando parado
-    // Zera SOMENTE quando o usuário clica em "Zerar KM"
+    // Cronômetro que RODA em movimento e PAUSA quando parado
+    // ZERA SOMENTE no botão "Zerar KM"
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
@@ -152,7 +151,6 @@ fun EagleUnoApp() {
         }
     }
 
-    // Monitoramento da aceleração e variação de velocidade
     LaunchedEffect(speedKmH) {
         accelerationRate = speedKmH - previousSpeed
         previousSpeed = speedKmH
@@ -196,7 +194,7 @@ fun EagleUnoApp() {
         else -> selectedTheme.primaryColor.copy(alpha = 0.8f)
     }
 
-    // GPS Sensor Listener Seguro com Atualização Automática nos Widgets
+    // GPS Sensor Listener
     DisposableEffect(Unit) {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         val locationListener = object : LocationListener {
@@ -253,20 +251,19 @@ fun EagleUnoApp() {
         }
     }
 
-    // Resposta de Vibração Tátil (Feedback Háptico)
     fun triggerHaptic() {
         try {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
         } catch (_: Exception) {}
     }
 
-    // Lógica Correta de Seleção de Menus com os Botões Físicos
+    // NAVEGAÇÃO DOS BOTÕES FÍSICOS - TOTALMENTE CORRIGIDA E PRECISA
     fun onPhysicalLeftClick() {
         triggerHaptic()
         when (currentScreen) {
             ScreenState.HOME -> focusedIndex = (focusedIndex - 1 + 3) % 3
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex - 1 + 2) % 2
-            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 3) % 3
+            ScreenState.SETTINGS -> focusedIndex = (focusedIndex - 1 + 4) % 4
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex - 1 + total) % total
@@ -280,7 +277,7 @@ fun EagleUnoApp() {
         when (currentScreen) {
             ScreenState.HOME -> focusedIndex = (focusedIndex + 1) % 3
             ScreenState.SPEEDOMETER -> focusedIndex = (focusedIndex + 1) % 2
-            ScreenState.SETTINGS -> focusedIndex = (focusedIndex + 1) % 3
+            ScreenState.SETTINGS -> focusedIndex = (focusedIndex + 1) % 4
             ScreenState.THEMES -> {
                 val total = ThemeStyle.entries.size + 1
                 focusedIndex = (focusedIndex + 1) % total
@@ -312,15 +309,16 @@ fun EagleUnoApp() {
             }
             ScreenState.SETTINGS -> {
                 when (focusedIndex) {
-                    0 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 }
-                    1 -> isRgbEnabled = !isRgbEnabled
-                    2 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }
+                    0 -> { currentScreen = ScreenState.HOME; focusedIndex = 1 } // Voltar ao Menu Principal
+                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 } // CORRIGIDO: Galeria de Molduras
+                    2 -> { isRgbEnabled = !isRgbEnabled }                          // CORRIGIDO: Efeito RGB
+                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }  // CORRIGIDO: Sobre & Criador
                 }
             }
             ScreenState.THEMES -> {
                 if (focusedIndex == 0) {
                     currentScreen = ScreenState.SETTINGS
-                    focusedIndex = 0
+                    focusedIndex = 1
                 } else {
                     val themeIdx = focusedIndex - 1
                     if (themeIdx in ThemeStyle.entries.indices) {
@@ -464,7 +462,7 @@ fun EagleUnoApp() {
                                 onNavigateBack = {
                                     triggerHaptic()
                                     currentScreen = ScreenState.SETTINGS
-                                    focusedIndex = 0
+                                    focusedIndex = 1
                                 },
                                 onThemeSelect = { theme ->
                                     triggerHaptic()
@@ -485,7 +483,7 @@ fun EagleUnoApp() {
                     }
                 }
 
-                // Botões físicos com resposta de toque e vibração instantânea
+                // Botões físicos na parte inferior do aparelho
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -709,7 +707,7 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Painel do Velocímetro com Horas Dirigidas Destacadas e Totalmente Visíveis
+        // Painel do Velocímetro com Horas Dirigidas Destacadas e Ampliadas
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -723,7 +721,7 @@ fun SpeedometerScreen(
             // Mostrador Principal da Velocidade Aumentado
             Row(
                 verticalAlignment = Alignment.Bottom,
-                modifier = Modifier.weight(1.05f),
+                modifier = Modifier.weight(1.0f),
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
@@ -745,53 +743,56 @@ fun SpeedometerScreen(
 
             Spacer(modifier = Modifier.width(4.dp))
 
-            // Painel Lateral da Distância e Horas Dirigidas (Dedicado e Sem Sobreposição)
+            // PAINEL LATERAL AMPLIADO: Distância + Horas Dirigidas (100% Visível e sem cortes)
             Column(
                 horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.SpaceEvenly,
                 modifier = Modifier
-                    .weight(0.95f)
+                    .weight(1.0f)
+                    .fillMaxHeight()
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xFF0F1726))
                     .border(1.dp, activeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
                     .padding(horizontal = 6.dp, vertical = 4.dp)
             ) {
-                Text(
-                    text = "DISTÂNCIA",
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Gray,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = "%.2f km".format(distanceKm),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFFFD700),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column {
+                    Text(
+                        text = "DISTÂNCIA",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "%.2f km".format(distanceKm),
+                        fontSize = 13.5.sp, // Fonte Ampliada
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFFFFD700),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(3.dp))
-
-                Text(
-                    text = if (isMoving) "▶ DIRIGINDO" else "⏸ PAUSADO",
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                // HORAS DIRIGIDAS RESTAURADAS E TOTALMENTE VISÍVEIS
-                Text(
-                    text = formattedTime,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF00E5FF),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column {
+                    Text(
+                        text = if (isMoving) "▶ DIRIGINDO" else "⏸ PAUSADO",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    // HORAS DIRIGIDAS - AMPLIOU A FONTE E O ENQUADRAMENTO
+                    Text(
+                        text = formattedTime,
+                        fontSize = 13.5.sp, // Fonte Ampliada e Destaque
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFF00F0FF),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
@@ -939,12 +940,24 @@ fun AboutScreen(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .background(Color(0xFF0F1623), RoundedCornerShape(6.dp))
-                .padding(10.dp),
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // GIF do Soldado Commando Restaurado
+            Image(
+                painter = painterResource(id = R.drawable.commando),
+                contentDescription = "Commando Soldier Animation",
+                modifier = Modifier
+                    .size(45.dp)
+                    .clip(RoundedCornerShape(6.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
             Text(
                 text = "Eagle Uno v1.4",
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF00F0FF)
             )
@@ -955,7 +968,7 @@ fun AboutScreen(
                 color = Color.Gray
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Button(
                 onClick = {
@@ -972,13 +985,13 @@ fun AboutScreen(
                 shape = RoundedCornerShape(6.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(28.dp)
+                    .height(26.dp)
             ) {
                 Text(
                     text = "Apoiar via PayPal",
                     color = Color(0xFF003087),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 10.sp
+                    fontSize = 9.5.sp
                 )
             }
         }
