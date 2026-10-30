@@ -1,40 +1,49 @@
 package com.eagleuno.app
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
-import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.widget.RemoteViews
 
 class CoverScreenWidgetProvider : AppWidgetProvider() {
 
-    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
         for (appWidgetId in appWidgetIds) {
-            updateWidget(context, appWidgetManager, appWidgetId, 0f)
+            updateAppWidget(context, appWidgetManager, appWidgetId)
         }
     }
 
     companion object {
-        fun updateWidget(
+        fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
-            appWidgetId: Int,
-            speedKmH: Float
+            appWidgetId: Int
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_cover_layout)
-            views.setTextViewText(R.id.tv_cover_speed, "${speedKmH.toInt()}")
-            views.setTextViewText(R.id.tv_cover_unit, "KM/H")
-            appWidgetManager.updateAppWidget(appWidgetId, views)
-        }
 
-        fun updateAllCoverWidgets(context: Context, speedKmH: Float) {
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val thisWidget = ComponentName(context, CoverScreenWidgetProvider::class.java)
-            val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
-
-            for (widgetId in allWidgetIds) {
-                updateWidget(context, appWidgetManager, widgetId, speedKmH)
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
+
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+
+            val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
+
+            views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
+            views.setImageViewResource(R.id.widget_bg_image, R.drawable.theme_red)
+
+            appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
 }

@@ -1,25 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="8dp"
-    android:background="#80000000">
+    android:background="@drawable/bg_glass_widget"
+    android:padding="4dp">
 
-    <TextView
-        android:id="@+id/tv_cover_speed"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="0"
-        android:textColor="#FFFFFF"
-        android:textSize="20sp"
-        android:textStyle="bold" />
+    <ImageView
+        android:id="@+id/widget_bg_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:src="@drawable/theme_red"
+        android:contentDescription="@string/app_name" />
 
-    <TextView
-        android:id="@+id/tv_cover_unit"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="KM/H"
-        android:textColor="#00F0FF"
-        android:textSize="12sp" />
-</LinearLayout>
+</RelativeLayout>

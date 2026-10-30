@@ -1,24 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="true"
-        android:label="Eagle Uno"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Transparent">
+        android:theme="@style/Theme.MyApplication">
+
+        <!-- Samsung Multiwindow Metadata -->
+        <meta-data
+            android:name="com.samsung.android.support.multiwindow"
+            android:value="true" />
+        <meta-data
+            android:name="com.samsung.android.multidisplay.keep_process_alive"
+            android:value="true" />
 
         <activity
             android:name="com.eagleuno.app.MainActivity"
             android:exported="true"
-            android:screenOrientation="portrait">
+            android:label="@string/app_name"
+            android:theme="@style/Theme.MyApplication"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Samsung Z Flip 5 Flex Window / Cover Screen Metadata -->
+            <meta-data
+                android:name="com.samsung.android.activity.show_on_cover"
+                android:value="true" />
         </activity>
+
+        <!-- Cover Screen App Widget Provider (Z Flip) -->
+        <receiver
+            android:name="com.eagleuno.app.CoverScreenWidgetProvider"
+            android:exported="true"
+            android:label="Eagle Uno (Tela Capa Z Flip)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/cover_widget_info" />
+        </receiver>
+
+        <!-- Normal Home Screen App Widget Provider -->
+        <receiver
+            android:name="com.eagleuno.app.NormalWidgetProvider"
+            android:exported="true"
+            android:label="Eagle Uno (Tela Inicial)">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/normal_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>
