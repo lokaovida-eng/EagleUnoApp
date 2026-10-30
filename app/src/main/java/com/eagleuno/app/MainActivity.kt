@@ -108,7 +108,7 @@ fun EagleUnoApp() {
 
     var selectedTheme by remember { mutableStateOf(ThemeStyle.VERMELHO_METAL) }
     var currentScreen by remember { mutableStateOf(ScreenState.HOME) }
-    // ATIVADO POR PADRÃO: Efeito RGB vibrante com todas as cores do arco-íris
+    // ATIVADO POR PADRÃO: Efeito RGB vibrante
     var isRgbEnabled by remember { mutableStateOf(true) }
 
     var isAppVisible by remember { mutableStateOf(false) }
@@ -142,7 +142,7 @@ fun EagleUnoApp() {
     var accelerationRate by remember { mutableFloatStateOf(0f) }
 
     // Cronômetro que RODA em movimento e PAUSA quando parado
-    // ZERA SOMENTE quando o usuário clica em "Zerar KM"
+    // ZERA SOMENTE no botão "Zerar KM"
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
@@ -161,22 +161,22 @@ fun EagleUnoApp() {
     val isAccelerating = isMoving && accelerationRate > 0.2f
     val isDecelerating = isMoving && accelerationRate < -0.2f
 
-    // Frequência dinâmica da piscada estilo RPM de volante de corrida (Sincronização Perfeita)
+    // Frequência dinâmica da piscada estilo RPM de volante de corrida
     val pulseDurationMillis = when {
         isAccelerating -> {
             val factor = (speedKmH * 5f + accelerationRate * 80f).toInt()
-            max(90, 800 - factor) // Aceleração forte = Piscada Vermelha ultra-rápida (até 90ms); Aceleração fraca = Piscada lenta (800ms)
+            max(90, 800 - factor)
         }
         isDecelerating -> {
             val factor = (speedKmH * 4f + kotlin.math.abs(accelerationRate) * 80f).toInt()
-            max(100, 800 - factor) // Frenagem forte = Piscada Azul Bebê ultra-rápida (até 100ms); Frenagem suave = Piscada lenta (800ms)
+            max(100, 800 - factor)
         }
         else -> 500
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "RPMNeonGlow")
     val alphaGlow by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
+        initialValue = 0.25f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = pulseDurationMillis, easing = FastOutSlowInEasing),
@@ -185,7 +185,6 @@ fun EagleUnoApp() {
         label = "RPMAlphaGlow"
     )
 
-    // Ciclo de Cores RGB Vibrantes do Arco-Íris
     val rainbowColor by infiniteTransition.animateColor(
         initialValue = Color(0xFFFF0033),
         targetValue = Color(0xFF00E5FF),
@@ -199,7 +198,6 @@ fun EagleUnoApp() {
     val redNeonColor = Color(0xFFFF0033).copy(alpha = alphaGlow)
     val babyBlueNeonColor = Color(0xFF00F0FF).copy(alpha = alphaGlow)
 
-    // Moldura Néon Reativa Ativa na Aceleração e Frenagem
     val activeAccentColor = when {
         isAccelerating -> redNeonColor
         isDecelerating -> babyBlueNeonColor
@@ -207,7 +205,7 @@ fun EagleUnoApp() {
         else -> selectedTheme.primaryColor
     }
 
-    // GPS Sensor Listener Seguro com Atualização Automática nos Widgets
+    // GPS Sensor Listener
     DisposableEffect(Unit) {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         val locationListener = object : LocationListener {
@@ -270,7 +268,7 @@ fun EagleUnoApp() {
         } catch (_: Exception) {}
     }
 
-    // Navegação dos Botões Físicos com Seleção Precisa
+    // Navegação dos Botões Físicos
     fun onPhysicalLeftClick() {
         triggerHaptic()
         when (currentScreen) {
@@ -322,10 +320,10 @@ fun EagleUnoApp() {
             }
             ScreenState.SETTINGS -> {
                 when (focusedIndex) {
-                    0 -> { currentScreen = ScreenState.HOME; focusedIndex = 1 } // Voltar ao Menu Principal
-                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 } // Galeria de Molduras
-                    2 -> { isRgbEnabled = !isRgbEnabled }                          // Efeito RGB
-                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }  // Sobre & Criador
+                    0 -> { currentScreen = ScreenState.HOME; focusedIndex = 1 }
+                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 }
+                    2 -> { isRgbEnabled = !isRgbEnabled }
+                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }
                 }
             }
             ScreenState.THEMES -> {
@@ -639,6 +637,7 @@ fun MenuButton(
     }
 }
 
+// Botões Superiores Compactos ("Voltar" e "Zerar KM")
 @Composable
 fun CompactHeaderButton(
     title: String,
@@ -649,22 +648,22 @@ fun CompactHeaderButton(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(22.dp)
-            .clip(RoundedCornerShape(4.dp))
+            .height(18.dp) // Reduzido para dar mais espaço ao velocímetro
+            .clip(RoundedCornerShape(3.dp))
             .background(if (isFocused) Color(0xFF1C283A) else Color(0xFF0F1623))
             .border(
                 width = if (isFocused) 1.2.dp else 0.8.dp,
                 color = if (isFocused) Color(0xFFFFD700) else color,
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(3.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 6.dp),
+            .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
         Text(
             text = title,
-            fontSize = 8.5.sp,
+            fontSize = 7.5.sp,
             fontWeight = FontWeight.Bold,
             color = if (isFocused) Color(0xFFFFD700) else color,
             maxLines = 1,
@@ -694,6 +693,7 @@ fun SpeedometerScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        // Cabeçalho Superior Compacto Reduzido
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -720,80 +720,89 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Painel do Velocímetro com Posição da Hora e Distância 100% Corrigidos e Destacados
-        Column(
+        // Painel Principal: Velocidade AUMENTADA no Centro + Distância e Horas na Lateral DIREITA
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .background(Color(0xFF080C14), RoundedCornerShape(6.dp))
                 .border(1.5.dp, activeColor, RoundedCornerShape(6.dp))
-                .padding(6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 6.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Mostrador Principal da Velocidade Aumentado
+            // LADO ESQUERDO/CENTRO: Número da Velocidade AUMENTADO para Máxima Visibilidade
             Row(
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.weight(1.05f),
+                horizontalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = "${speedKmH.toInt()}",
-                    fontSize = 58.sp,
+                    fontSize = 76.sp, // VELOCIDADE AUMENTADA
                     fontWeight = FontWeight.Black,
                     color = activeColor,
-                    letterSpacing = (-2).sp
+                    letterSpacing = (-3).sp
                 )
-                Spacer(modifier = Modifier.width(3.dp))
+                Spacer(modifier = Modifier.width(2.dp))
                 Text(
                     text = "km/h",
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    modifier = Modifier.padding(bottom = 10.dp)
                 )
             }
 
-            // Bloco Dedicado e Exclusivo: DISTÂNCIA + TEMPO DIRIGINDO (Posição Corrigida e Totalmente Visível)
-            Row(
+            Spacer(modifier = Modifier.width(4.dp))
+
+            // LADO DIREITO: Painel Lateral com DISTÂNCIA + TEMPO DIRIGIDO (Colocado na Direita)
+            Column(
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.SpaceEvenly,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .weight(0.95f)
+                    .fillMaxHeight()
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xFF0F1726))
                     .border(1.dp, activeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
             ) {
-                // Coluna 1: DISTÂNCIA
-                Column(horizontalAlignment = Alignment.Start) {
+                Column {
                     Text(
                         text = "DISTÂNCIA",
                         fontSize = 7.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.LightGray
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = "%.2f km".format(distanceKm),
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFFFD700)
+                        color = Color(0xFFFFD700),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                // Coluna 2: HORAS DIRIGIDAS (Posição Corrigida, Texto Amplo sem Nenhuma Sobreposição)
-                Column(horizontalAlignment = Alignment.End) {
+                Column {
                     Text(
                         text = if (isMoving) "▶ DIRIGINDO" else "⏸ PAUSADO",
                         fontSize = 7.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800)
+                        color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = formattedTime,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF00F0FF)
+                        color = Color(0xFF00F0FF),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
