@@ -4,11 +4,13 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.ColorDrawable
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColorAsState
@@ -40,13 +42,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Deixa a janela do Android 100% transparente
-        window.setBackgroundDrawableResource(android.R.color.transparent)
+        // Configuração para transparência total da janela no Android
+        window.setBackgroundDrawable(ColorDrawable(android.graphics.Color.TRANSPARENT))
+        window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
 
         setContent {
-            MaterialTheme {
-                EagleUnoApp()
-            }
+            EagleUnoApp()
         }
     }
 }
@@ -108,9 +109,13 @@ fun EagleUnoApp() {
         }
     }
 
-    // Moldura néon em volta da tela transparente
+    // Moldura néon em volta da tela 100% transparente
     DynamicNeonSpeedFrame(currentSpeedKmH = speedKmH) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Transparent)
+        ) {
             when (currentScreen) {
                 ScreenState.SPEEDOMETER -> {
                     SpeedometerScreen(
@@ -191,6 +196,7 @@ fun DynamicNeonSpeedFrame(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color.Transparent)
             .then(
                 if (isExceedingLimit) {
                     Modifier.border(
@@ -221,6 +227,7 @@ fun SpeedometerScreen(
     onResetDistance: () -> Unit,
     onNavigateToAbout: () -> Unit
 ) {
+    // Tela 100% transparente para refletir a tela do sistema por trás
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -233,7 +240,7 @@ fun SpeedometerScreen(
             modifier = Modifier
                 .padding(24.dp)
                 .background(
-                    color = Color.Black.copy(alpha = 0.35f),
+                    color = Color.Black.copy(alpha = 0.25f), // Vidro suave para dar leitura
                     shape = RoundedCornerShape(24.dp)
                 )
                 .padding(28.dp)
