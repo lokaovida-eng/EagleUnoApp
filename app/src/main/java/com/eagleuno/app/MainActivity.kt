@@ -161,15 +161,15 @@ fun EagleUnoApp() {
     val isAccelerating = isMoving && accelerationRate > 0.2f
     val isDecelerating = isMoving && accelerationRate < -0.2f
 
-    // Frequência dinâmica da piscada estilo RPM de volante de corrida
+    // Frequência dinâmica da piscada estilo RPM de volante de corrida (Sincronização Perfeita)
     val pulseDurationMillis = when {
         isAccelerating -> {
             val factor = (speedKmH * 5f + accelerationRate * 80f).toInt()
-            max(90, 800 - factor)
+            max(90, 800 - factor) // Aceleração forte = Piscada Vermelha ultra-rápida (até 90ms); Aceleração fraca = Piscada lenta (800ms)
         }
         isDecelerating -> {
-            val factor = (speedKmH * 4f).toInt()
-            max(120, 700 - factor)
+            val factor = (speedKmH * 4f + kotlin.math.abs(accelerationRate) * 80f).toInt()
+            max(100, 800 - factor) // Frenagem forte = Piscada Azul Bebê ultra-rápida (até 100ms); Frenagem suave = Piscada lenta (800ms)
         }
         else -> 500
     }
