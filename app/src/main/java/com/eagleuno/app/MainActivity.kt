@@ -108,7 +108,8 @@ fun EagleUnoApp() {
 
     var selectedTheme by remember { mutableStateOf(ThemeStyle.VERMELHO_METAL) }
     var currentScreen by remember { mutableStateOf(ScreenState.HOME) }
-    var isRgbEnabled by remember { mutableStateOf(false) }
+    // ATIVADO POR PADRÃO: Efeito RGB vibrante com todas as cores do arco-íris
+    var isRgbEnabled by remember { mutableStateOf(true) }
 
     var isAppVisible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
@@ -141,7 +142,7 @@ fun EagleUnoApp() {
     var accelerationRate by remember { mutableFloatStateOf(0f) }
 
     // Cronômetro que RODA em movimento e PAUSA quando parado
-    // ZERA SOMENTE no botão "Zerar KM"
+    // ZERA SOMENTE quando o usuário clica em "Zerar KM"
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000L)
@@ -170,12 +171,12 @@ fun EagleUnoApp() {
             val factor = (speedKmH * 4f).toInt()
             max(120, 700 - factor)
         }
-        else -> 600
+        else -> 500
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "RPMNeonGlow")
     val alphaGlow by infiniteTransition.animateFloat(
-        initialValue = 0.25f,
+        initialValue = 0.3f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = pulseDurationMillis, easing = FastOutSlowInEasing),
@@ -184,17 +185,29 @@ fun EagleUnoApp() {
         label = "RPMAlphaGlow"
     )
 
+    // Ciclo de Cores RGB Vibrantes do Arco-Íris
+    val rainbowColor by infiniteTransition.animateColor(
+        initialValue = Color(0xFFFF0033),
+        targetValue = Color(0xFF00E5FF),
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "RainbowAnimation"
+    )
+
     val redNeonColor = Color(0xFFFF0033).copy(alpha = alphaGlow)
     val babyBlueNeonColor = Color(0xFF00F0FF).copy(alpha = alphaGlow)
 
+    // Moldura Néon Reativa Ativa na Aceleração e Frenagem
     val activeAccentColor = when {
         isAccelerating -> redNeonColor
         isDecelerating -> babyBlueNeonColor
-        isMoving || isRgbEnabled -> selectedTheme.primaryColor
-        else -> selectedTheme.primaryColor.copy(alpha = 0.8f)
+        isRgbEnabled -> rainbowColor
+        else -> selectedTheme.primaryColor
     }
 
-    // GPS Sensor Listener
+    // GPS Sensor Listener Seguro com Atualização Automática nos Widgets
     DisposableEffect(Unit) {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         val locationListener = object : LocationListener {
@@ -257,7 +270,7 @@ fun EagleUnoApp() {
         } catch (_: Exception) {}
     }
 
-    // NAVEGAÇÃO DOS BOTÕES FÍSICOS - TOTALMENTE CORRIGIDA E PRECISA
+    // Navegação dos Botões Físicos com Seleção Precisa
     fun onPhysicalLeftClick() {
         triggerHaptic()
         when (currentScreen) {
@@ -310,9 +323,9 @@ fun EagleUnoApp() {
             ScreenState.SETTINGS -> {
                 when (focusedIndex) {
                     0 -> { currentScreen = ScreenState.HOME; focusedIndex = 1 } // Voltar ao Menu Principal
-                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 } // CORRIGIDO: Galeria de Molduras
-                    2 -> { isRgbEnabled = !isRgbEnabled }                          // CORRIGIDO: Efeito RGB
-                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }  // CORRIGIDO: Sobre & Criador
+                    1 -> { currentScreen = ScreenState.THEMES; focusedIndex = 0 } // Galeria de Molduras
+                    2 -> { isRgbEnabled = !isRgbEnabled }                          // Efeito RGB
+                    3 -> { currentScreen = ScreenState.ABOUT; focusedIndex = 0 }  // Sobre & Criador
                 }
             }
             ScreenState.THEMES -> {
@@ -364,7 +377,7 @@ fun EagleUnoApp() {
                     contentScale = ContentScale.Fit
                 )
 
-                // Telinha do Aparelho com Moldura Néon Reativa
+                // Telinha do Aparelho com Moldura Néon Reativa RPM
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -381,7 +394,7 @@ fun EagleUnoApp() {
                             )
                         )
                         .border(
-                            width = 3.dp,
+                            width = 3.5.dp,
                             color = activeAccentColor,
                             shape = RoundedCornerShape(6.dp)
                         )
@@ -395,7 +408,7 @@ fun EagleUnoApp() {
                             .background(
                                 Brush.radialGradient(
                                     colors = listOf(
-                                        activeAccentColor.copy(alpha = 0.45f),
+                                        activeAccentColor.copy(alpha = 0.5f),
                                         Color.Transparent
                                     )
                                 )
@@ -619,7 +632,7 @@ fun MenuButton(
         Text(
             text = subtitle,
             fontSize = 7.sp,
-            color = Color.Gray,
+            color = Color.LightGray,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -707,90 +720,80 @@ fun SpeedometerScreen(
 
         Spacer(modifier = Modifier.height(2.dp))
 
-        // Painel do Velocímetro com Horas Dirigidas Destacadas e Ampliadas
-        Row(
+        // Painel do Velocímetro com Posição da Hora e Distância 100% Corrigidos e Destacados
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .background(Color(0xFF080C14), RoundedCornerShape(6.dp))
                 .border(1.5.dp, activeColor, RoundedCornerShape(6.dp))
-                .padding(horizontal = 6.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Mostrador Principal da Velocidade Aumentado
             Row(
                 verticalAlignment = Alignment.Bottom,
-                modifier = Modifier.weight(1.0f),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = "${speedKmH.toInt()}",
-                    fontSize = 62.sp,
+                    fontSize = 58.sp,
                     fontWeight = FontWeight.Black,
                     color = activeColor,
                     letterSpacing = (-2).sp
                 )
-                Spacer(modifier = Modifier.width(2.dp))
+                Spacer(modifier = Modifier.width(3.dp))
                 Text(
                     text = "km/h",
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    modifier = Modifier.padding(bottom = 6.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(4.dp))
-
-            // PAINEL LATERAL AMPLIADO: Distância + Horas Dirigidas (100% Visível e sem cortes)
-            Column(
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.SpaceEvenly,
+            // Bloco Dedicado e Exclusivo: DISTÂNCIA + TEMPO DIRIGINDO (Posição Corrigida e Totalmente Visível)
+            Row(
                 modifier = Modifier
-                    .weight(1.0f)
-                    .fillMaxHeight()
+                    .fillMaxWidth()
                     .clip(RoundedCornerShape(4.dp))
                     .background(Color(0xFF0F1726))
                     .border(1.dp, activeColor.copy(alpha = 0.8f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 4.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                // Coluna 1: DISTÂNCIA
+                Column(horizontalAlignment = Alignment.Start) {
                     Text(
                         text = "DISTÂNCIA",
-                        fontSize = 8.sp,
+                        fontSize = 7.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = Color.LightGray
                     )
                     Text(
                         text = "%.2f km".format(distanceKm),
-                        fontSize = 13.5.sp, // Fonte Ampliada
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFFFFD700),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = Color(0xFFFFD700)
                     )
                 }
 
-                Column {
+                // Coluna 2: HORAS DIRIGIDAS (Posição Corrigida, Texto Amplo sem Nenhuma Sobreposição)
+                Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = if (isMoving) "▶ DIRIGINDO" else "⏸ PAUSADO",
-                        fontSize = 8.sp,
+                        fontSize = 7.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = if (isMoving) Color(0xFF00FF66) else Color(0xFFFF8800)
                     )
-                    // HORAS DIRIGIDAS - AMPLIOU A FONTE E O ENQUADRAMENTO
                     Text(
                         text = formattedTime,
-                        fontSize = 13.5.sp, // Fonte Ampliada e Destaque
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF00F0FF),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = Color(0xFF00F0FF)
                     )
                 }
             }
@@ -943,7 +946,6 @@ fun AboutScreen(
                 .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // GIF do Soldado Commando Restaurado
             Image(
                 painter = painterResource(id = R.drawable.commando),
                 contentDescription = "Commando Soldier Animation",
@@ -957,7 +959,7 @@ fun AboutScreen(
 
             Text(
                 text = "Eagle Uno v1.4",
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF00F0FF)
             )
@@ -985,7 +987,7 @@ fun AboutScreen(
                 shape = RoundedCornerShape(6.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(26.dp)
+                    .height(28.dp)
             ) {
                 Text(
                     text = "Apoiar via PayPal",
