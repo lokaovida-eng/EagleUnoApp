@@ -253,33 +253,43 @@ fun CyberpunkDashboardScreen() {
     val seconds = (movingTimeMillis % 60000L) / 1000L
     val formattedTime = "%02d:%02d:%02d".format(hours, minutes, seconds)
 
-    // Fullscreen Cyberpunk Outer Layout
-    Box(
+    // Fullscreen Cyberpunk Outer Layout (Adaptive Framing for Z Flip 5 Cover & Main Displays)
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(8.dp),
+            .systemBarsPadding()
+            .padding(horizontal = 6.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Main Dashboard Card (Optimized for Flip Cover Screen & Compact Displays)
+        val isCompactDisplay = this.maxHeight < 420.dp || this.maxWidth < 380.dp
+        val speedFontSize = if (isCompactDisplay) 66.sp else 78.sp
+        val dividerHeight = if (isCompactDisplay) 72.dp else 88.dp
+        val metricsSpacing = if (isCompactDisplay) 10.dp else 16.dp
+        val outerCardRadius = if (isCompactDisplay) 18.dp else 22.dp
+
+        // Main Dashboard Card (Polished Frame aligned for Z Flip 5 Flex Window & Main Display)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(outerCardRadius))
                 .background(Color(0xFF03060B))
                 .border(
                     width = 1.2.dp,
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF00FFCC).copy(alpha = 0.5f),
-                            Color(0xFFFF0055).copy(alpha = 0.3f),
-                            Color(0xFF00FFCC).copy(alpha = 0.2f)
+                            Color(0xFF00FFCC).copy(alpha = 0.6f),
+                            Color(0xFFFF0055).copy(alpha = 0.35f),
+                            Color(0xFF00FFCC).copy(alpha = 0.25f)
                         )
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(outerCardRadius)
                 )
-                .padding(horizontal = 14.dp, vertical = 12.dp)
+                .padding(
+                    horizontal = if (isCompactDisplay) 10.dp else 14.dp,
+                    vertical = if (isCompactDisplay) 8.dp else 12.dp
+                )
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -296,13 +306,13 @@ fun CyberpunkDashboardScreen() {
                     onResetClick = { resetMetrics() }
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(if (isCompactDisplay) 4.dp else 8.dp))
 
                 // 2. CENTRAL SECTION (DIVISÃO EM DOIS MÓDULOS)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -314,7 +324,7 @@ fun CyberpunkDashboardScreen() {
                     ) {
                         Text(
                             text = "${speedKmH.toInt()}",
-                            fontSize = 78.sp,
+                            fontSize = speedFontSize,
                             fontWeight = FontWeight.Black,
                             fontStyle = FontStyle.Italic,
                             color = currentSpeedColor,
@@ -325,7 +335,7 @@ fun CyberpunkDashboardScreen() {
                         )
                         Text(
                             text = "km/h",
-                            fontSize = 15.sp,
+                            fontSize = if (isCompactDisplay) 13.sp else 15.sp,
                             fontWeight = FontWeight.Bold,
                             fontStyle = FontStyle.Italic,
                             color = currentSpeedColor
@@ -335,7 +345,7 @@ fun CyberpunkDashboardScreen() {
                     // LINHA VERTICAL NEON PONTILLADA
                     DottedDivider(
                         modifier = Modifier
-                            .height(88.dp)
+                            .height(dividerHeight)
                             .width(2.dp)
                     )
 
@@ -343,9 +353,9 @@ fun CyberpunkDashboardScreen() {
                     Column(
                         modifier = Modifier
                             .weight(1.1f)
-                            .padding(start = 12.dp),
+                            .padding(start = if (isCompactDisplay) 8.dp else 12.dp),
                         horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        verticalArrangement = Arrangement.spacedBy(metricsSpacing)
                     ) {
                         // Linha 1: Distância
                         Row(
@@ -353,13 +363,13 @@ fun CyberpunkDashboardScreen() {
                             horizontalArrangement = Arrangement.Start
                         ) {
                             RoadIcon(
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier.size(if (isCompactDisplay) 24.dp else 28.dp),
                                 color = Color(0xFF00FFCC)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "%.2f km".format(distanceKm).replace('.', ','),
-                                fontSize = 18.sp,
+                                fontSize = if (isCompactDisplay) 16.sp else 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF00FFCC)
                             )
@@ -371,13 +381,13 @@ fun CyberpunkDashboardScreen() {
                             horizontalArrangement = Arrangement.Start
                         ) {
                             StopwatchIcon(
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier.size(if (isCompactDisplay) 24.dp else 28.dp),
                                 color = Color(0xFF00FFCC)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = formattedTime,
-                                fontSize = 18.sp,
+                                fontSize = if (isCompactDisplay) 16.sp else 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF00FFCC)
                             )
@@ -385,7 +395,7 @@ fun CyberpunkDashboardScreen() {
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(if (isCompactDisplay) 8.dp else 12.dp))
 
                 // 3. BARRA DE PERFORMANCE INFERIOR (RPM SPEED DOMINO BAR)
                 NeonRpmBar(
