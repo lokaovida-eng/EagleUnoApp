@@ -6,7 +6,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.widget.RemoteViews
 
 class CoverScreenWidgetProvider : AppWidgetProvider() {
@@ -37,13 +36,12 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 }
 
-                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                } else {
-                    PendingIntent.FLAG_UPDATE_CURRENT
-                }
-
-                val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
+                )
 
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
@@ -52,12 +50,12 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
                 val seconds = (movingTimeMillis % 60000L) / 1000L
                 val formattedTime = "%02d:%02d:%02d".format(hours, minutes, seconds)
 
-                try { views.setTextViewText(R.id.widget_speed_text, "${speedKmH.toInt()}") } catch (_: Exception) {}
-                try { views.setTextViewText(R.id.widget_distance_text, "%.2f km".format(distanceKm).replace('.', ',')) } catch (_: Exception) {}
-                try { views.setTextViewText(R.id.widget_time_text, formattedTime) } catch (_: Exception) {}
+                views.setTextViewText(R.id.widget_speed_text, speedKmH.toInt().toString())
+                views.setTextViewText(R.id.widget_distance_text, "%.2f km".format(distanceKm).replace('.', ','))
+                views.setTextViewText(R.id.widget_time_text, formattedTime)
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
             }
         }
@@ -76,7 +74,7 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
                 for (widgetId in allWidgetIds) {
                     updateAppWidget(context, appWidgetManager, widgetId, speedKmH, distanceKm, movingTimeMillis)
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 e.printStackTrace()
             }
         }

@@ -45,6 +45,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,7 +63,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.eagleuno.app.ui.theme.MyApplicationTheme
-import com.eagleuno.app.ui.theme.*
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
@@ -78,7 +78,6 @@ class MainActivity : ComponentActivity() {
         window.setBackgroundDrawableResource(android.R.color.black)
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
 
-        // Make window layout transparent and extend under display cutouts (Edge-to-Edge display on Z Flip 5 cover screen)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
@@ -130,7 +129,7 @@ fun CyberpunkDashboardScreen() {
     // Driving Timer: Runs when moving (> 0.5 km/h)
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1000L)
+            delay(1000)
             if (speedKmH > 0.5f) {
                 movingTimeMillis += 1000L
             }
@@ -150,30 +149,27 @@ fun CyberpunkDashboardScreen() {
         lastSpeedTime = now
     }
 
-    // Ultra-snappy speed float animation for real-time digital readout without lag
+    // Snappy speed float animation for real-time digital readout
     val animatedSpeedKmH by animateFloatAsState(
         targetValue = speedKmH,
         animationSpec = tween(durationMillis = 100, easing = FastOutLinearInEasing),
         label = "SpeedReadoutAnimation"
     )
 
-    // Dynamic Speed Color based on Speed Range (Cyan -> Green -> Yellow -> Orange -> Red)
+    // Dynamic Speed Color based on Speed Range
     val currentSpeedColor by animateColorAsState(
         targetValue = getSpeedColor(speedKmH),
         animationSpec = tween(durationMillis = 200),
         label = "SpeedColorAnimation"
     )
 
-    // RPM / Speed Shift Light Bar Progress:
-    // Fast response simulation: When accelerating, RPM revs up rapidly towards top (80-100%).
-    // When decelerating or steady, recedes back smoothly to speed base level.
+    // RPM / Speed Shift Light Bar Progress
     val maxSpeedForBar = 160f
     val targetRpmProgress = remember(speedKmH, isAccelerating, isDecelerating, accelerationRate) {
         val baseRatio = (speedKmH / maxSpeedForBar).coerceIn(0.04f, 1.0f)
         if (speedKmH <= 0.5f) {
             if (isAccelerating) 0.35f else 0.04f
         } else if (isAccelerating) {
-            // Rapid RPM rev boost when acceleration pedal is pressed!
             (baseRatio + 0.38f + (accelerationRate * 0.04f)).coerceIn(0.40f, 1.0f)
         } else if (isDecelerating) {
             (baseRatio - 0.08f).coerceIn(0.04f, 1.0f)
@@ -182,11 +178,11 @@ fun CyberpunkDashboardScreen() {
         }
     }
 
-    // Rapid tachometer light bar fill animation (100ms snappy response)
+    // Snappy tachometer light bar fill animation (90ms snappy response)
     val animatedRpmProgress by animateFloatAsState(
         targetValue = targetRpmProgress,
         animationSpec = tween(
-            durationMillis = if (isAccelerating || isDecelerating) 90 else 160,
+            durationMillis = if (isAccelerating || isDecelerating) 90 else 150,
             easing = FastOutSlowInEasing
         ),
         label = "SnappyRpmBarFill"
@@ -203,11 +199,12 @@ fun CyberpunkDashboardScreen() {
             var sensorListener: SensorEventListener? = null
             try {
                 sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+                @Suppress("DEPRECATION")
                 val orientationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ORIENTATION)
 
                 sensorListener = object : SensorEventListener {
                     override fun onSensorChanged(event: SensorEvent?) {
-                        if (event != null && event.sensor.type == Sensor.TYPE_ORIENTATION) {
+                        if (event != null) {
                             val azimuth = event.values[0]
                             compassDirection = getCardinalDirection(azimuth)
                         }
@@ -263,14 +260,12 @@ fun CyberpunkDashboardScreen() {
                                 }
                             }
 
-                            // Noise filter when stationary
                             if (currentSpeed < 0.8f && location.hasAccuracy() && location.accuracy > 25f) {
                                 currentSpeed = 0f
                             }
 
                             speedKmH = currentSpeed.coerceIn(0f, 350f)
 
-                            // Distance accumulation calibration
                             if (lastLocation != null && speedKmH > 0.5f) {
                                 val deltaMeters = lastLocation!!.distanceTo(location)
                                 val maxAllowedAccuracy = if (location.hasAccuracy()) location.accuracy else 35f
@@ -353,7 +348,7 @@ fun CyberpunkDashboardScreen() {
     val seconds = (movingTimeMillis % 60000L) / 1000L
     val formattedTime = "%02d:%02d:%02d".format(hours, minutes, seconds)
 
-    // Fullscreen Cyberpunk Outer Container (100% Zero Black Borders on Z Flip 5 Cover Screen)
+    // Fullscreen Cyberpunk Outer Container
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -367,7 +362,7 @@ fun CyberpunkDashboardScreen() {
                         Color(0xFF00FFCC)
                     )
                 ),
-                shape = androidx.compose.ui.graphics.RectangleShape
+                shape = RectangleShape
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -376,7 +371,6 @@ fun CyberpunkDashboardScreen() {
         val dividerHeight = if (isCompactDisplay) 76.dp else 92.dp
         val metricsSpacing = if (isCompactDisplay) 8.dp else 14.dp
 
-        // Fullscreen edge-to-edge content layout
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -496,7 +490,6 @@ fun CyberpunkDashboardScreen() {
             NeonRpmBar(
                 progress = animatedRpmProgress,
                 isAccelerating = isAccelerating,
-                isDecelerating = isDecelerating,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(if (isCompactDisplay) 18.dp else 22.dp)
@@ -621,7 +614,7 @@ fun NeonSpeedText(
         contentAlignment = Alignment.Center,
         modifier = modifier
     ) {
-        // Layer 1: Ambient Background Soft Glow (Large Diffuse Aura)
+        // Layer 1: Ambient Background Soft Glow
         Text(
             text = speed,
             fontSize = fontSize,
@@ -671,7 +664,7 @@ fun NeonSpeedText(
 
 fun getSpeedColor(speedKmH: Float): Color {
     return when {
-        speedKmH < 30f -> Color(0xFF00FFCC) // Ciano Neon (Urbano)
+        speedKmH < 30f -> Color(0xFF00FFCC) // Ciano Neon
         speedKmH < 60f -> Color(0xFF00FF66) // Verde Neon
         speedKmH < 90f -> Color(0xFFFFCC00) // Amarelo Neon
         speedKmH < 120f -> Color(0xFFFF6600) // Laranja Neon
@@ -798,9 +791,8 @@ fun DottedDivider(modifier: Modifier = Modifier) {
 @Composable
 fun NeonRpmBar(
     progress: Float,
-    isAccelerating: Boolean = false,
-    isDecelerating: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isAccelerating: Boolean = false
 ) {
     Canvas(modifier = modifier) {
         val totalSegments = 16
@@ -840,7 +832,7 @@ fun NeonRpmBar(
                     cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
                 )
 
-                // Núcleo Interno Branco Brilhante (Tubo Neon Aceso)
+                // Núcleo Interno Branco Brilhante
                 drawRoundRect(
                     color = Color.White.copy(alpha = if (isAccelerating) 0.75f else 0.45f),
                     topLeft = Offset(segmentRect.left + 1.dp.toPx(), segmentRect.top + 2.dp.toPx()),
@@ -857,7 +849,7 @@ fun NeonRpmBar(
                     style = Stroke(width = 1.dp.toPx())
                 )
             } else {
-                // LED Desligado (Slot Escuro com Contorno Neon Discreto)
+                // LED Desligado
                 drawRoundRect(
                     color = Color(0xFF060D17),
                     topLeft = Offset(segmentRect.left, segmentRect.top),
@@ -1066,15 +1058,15 @@ fun InfoIcon(modifier: Modifier = Modifier, color: Color = Color(0xFFFF0055)) {
 
 fun getCardinalDirection(azimuth: Float): String {
     val degrees = (azimuth % 360 + 360) % 360
-    return when {
-        degrees >= 337.5 || degrees < 22.5 -> "N"
-        degrees >= 22.5 && degrees < 67.5 -> "NE"
-        degrees >= 67.5 && degrees < 112.5 -> "E"
-        degrees >= 112.5 && degrees < 157.5 -> "SE"
-        degrees >= 157.5 && degrees < 202.5 -> "S"
-        degrees >= 202.5 && degrees < 247.5 -> "SW"
-        degrees >= 247.5 && degrees < 292.5 -> "W"
-        degrees >= 292.5 && degrees < 337.5 -> "NW"
+    return when (degrees) {
+        in 337.5..360.0, in 0.0..22.5 -> "N"
+        in 22.5..67.5 -> "NE"
+        in 67.5..112.5 -> "E"
+        in 112.5..157.5 -> "SE"
+        in 157.5..202.5 -> "S"
+        in 202.5..247.5 -> "SW"
+        in 247.5..292.5 -> "W"
+        in 292.5..337.5 -> "NW"
         else -> "N"
     }
 }

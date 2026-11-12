@@ -6,11 +6,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val TransparentColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
+    primary = NeonCyan,
+    secondary = NeonGreen,
+    tertiary = NeonMagenta,
     background = Color.Transparent,
-    surface = Color.Transparent
+    surface = Color.Transparent,
 )
 
 @Composable
