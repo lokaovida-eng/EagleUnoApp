@@ -688,94 +688,83 @@ fun NeonRpmBar(
     Canvas(modifier = modifier) {
         val w = size.width
         val h = size.height
-        val totalSegments = 24
-        val gap = 3.dp.toPx()
-        val slant = h * 0.45f // Corte chanfrado diagonal cyberpunk
+        val cornerRadius = h / 2.2f
+        val currentProgress = progress.coerceIn(0.02f, 1f)
+        val slant = h * 0.6f
 
-        val availableWidth = w - (totalSegments - 1) * gap
-        val segmentWidth = availableWidth / totalSegments
-        val currentActiveFraction = progress.coerceIn(0f, 1f) * totalSegments
+        // Cores do Gradiente Neon Suave (Verde -> Ciano -> Amarelo -> Laranja -> Vermelho Rosa Neon)
+        val gradientColors = listOf(
+            Color(0xFF00FF66), // Verde Neon
+            Color(0xFF00FFCC), // Ciano Neon
+            Color(0xFFFFCC00), // Amarelo Neon
+            Color(0xFFFF6600), // Laranja Neon
+            Color(0xFFFF0055)  // Rosa Vermelho Neon
+        )
 
-        // Trilha de fundo escura
+        // Trilha de Fundo Chanfrada Elegante
         val trackPath = Path().apply {
-            moveTo(0f, 0f)
-            lineTo(w - slant, 0f)
+            moveTo(cornerRadius, 0f)
+            lineTo((w - slant).coerceAtLeast(cornerRadius), 0f)
             lineTo(w, h)
-            lineTo(0f, h)
+            lineTo(cornerRadius, h)
+            arcTo(
+                rect = androidx.compose.ui.geometry.Rect(0f, 0f, cornerRadius * 2, h),
+                startAngleDegrees = 90f,
+                sweepAngleDegrees = 180f,
+                forceMoveTo = false
+            )
             close()
         }
+
+        // Desenhar Fundo Escuro
         drawPath(
             path = trackPath,
-            color = Color(0xFF040810)
+            color = Color(0xFF060B14)
         )
+        // Borda Fina de Contorno da Trilha
         drawPath(
             path = trackPath,
-            color = Color(0xFF00FFCC).copy(alpha = 0.2f),
-            style = Stroke(width = 1.dp.toPx())
+            color = Color(0xFF00FFCC).copy(alpha = 0.25f),
+            style = Stroke(width = 1.2.dp.toPx())
         )
 
-        // Desenho dos blocos de LED estilo Dominó (Esquerda para Direita)
-        for (i in 0 until totalSegments) {
-            val startX = i * (segmentWidth + gap)
-            val endX = startX + segmentWidth
+        // Tubo de Luz Neon Aceso Dinâmico
+        val activeWidth = (w * currentProgress).coerceAtLeast(cornerRadius * 2)
 
-            // Cor dinâmica do segmento (Ciano -> Verde -> Amarelo -> Laranja -> Vermelho Rosa Neon)
-            val t = i.toFloat() / (totalSegments - 1).coerceAtLeast(1)
-            val segmentColor = when {
-                t < 0.25f -> Color(0xFF00FFCC) // Ciano Neon
-                t < 0.50f -> Color(0xFF00FF66) // Verde Neon
-                t < 0.72f -> Color(0xFFFFCC00) // Amarelo Neon
-                t < 0.88f -> Color(0xFFFF6600) // Laranja Neon
-                else -> Color(0xFFFF0055)      // Rosa Vermelho Elétrico
-            }
-
-            val activeSegmentIndex = currentActiveFraction.toInt()
-            val isLit = i < activeSegmentIndex
-            val isPartial = i == activeSegmentIndex
-            val partialAlpha = if (isPartial) (currentActiveFraction - activeSegmentIndex) else 0f
-
-            val segSlantLeft = if (i == 0) 0f else slant * 0.25f
-            val segSlantRight = if (i == totalSegments - 1) slant else slant * 0.25f
-
-            val segPath = Path().apply {
-                moveTo(startX + segSlantLeft, 0f)
-                lineTo(endX, 0f)
-                lineTo(endX + segSlantRight, h)
-                lineTo(startX, h)
-                close()
-            }
-
-            if (isLit) {
-                // Dominó aceso (Aceleração / Velocidade subindo)
-                val isLeadingEdge = (i == activeSegmentIndex - 1)
-                val strokeAlpha = if (isLeadingEdge && isAccelerating) 0.9f else 0.4f
-
-                drawPath(path = segPath, color = segmentColor)
-                drawPath(
-                    path = segPath,
-                    color = Color.White.copy(alpha = strokeAlpha),
-                    style = Stroke(width = 1.2.dp.toPx())
-                )
-            } else if (isPartial && partialAlpha > 0.05f) {
-                // Transição suave do dominó acendendo/apagando
-                drawPath(path = segPath, color = segmentColor.copy(alpha = partialAlpha))
-                if (isAccelerating) {
-                    drawPath(
-                        path = segPath,
-                        color = Color.White.copy(alpha = partialAlpha * 0.8f),
-                        style = Stroke(width = 1.dp.toPx())
-                    )
-                }
-            } else {
-                // Dominó apagado (Trilha translúcida)
-                drawPath(path = segPath, color = segmentColor.copy(alpha = 0.12f))
-                drawPath(
-                    path = segPath,
-                    color = Color.White.copy(alpha = 0.22f),
-                    style = Stroke(width = 0.8.dp.toPx())
-                )
-            }
+        val fillPath = Path().apply {
+            val rightSlant = if (activeWidth >= w - slant) (activeWidth - (w - slant)).coerceAtMost(slant) else 0f
+            moveTo(cornerRadius, 0f)
+            lineTo((activeWidth - rightSlant).coerceAtLeast(cornerRadius), 0f)
+            lineTo(activeWidth, h)
+            lineTo(cornerRadius, h)
+            arcTo(
+                rect = androidx.compose.ui.geometry.Rect(0f, 0f, cornerRadius * 2, h),
+                startAngleDegrees = 90f,
+                sweepAngleDegrees = 180f,
+                forceMoveTo = false
+            )
+            close()
         }
+
+        val fillBrush = Brush.horizontalGradient(
+            colors = gradientColors,
+            startX = 0f,
+            endX = w
+        )
+
+        // Brilho Vibrante do Tubo Neon
+        drawPath(
+            path = fillPath,
+            brush = fillBrush,
+            alpha = if (isAccelerating) 0.98f else 0.88f
+        )
+
+        // Linha Central Brilhante Interna
+        drawPath(
+            path = fillPath,
+            color = Color.White.copy(alpha = if (isAccelerating) 0.65f else 0.35f),
+            style = Stroke(width = 1.5.dp.toPx())
+        )
     }
 }
 

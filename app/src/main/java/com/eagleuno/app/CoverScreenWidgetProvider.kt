@@ -45,8 +45,7 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
 
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
-                val speedFormatted = "${speedKmH.toInt()} km/h"
-                try { views.setTextViewText(R.id.widget_speed_text, speedFormatted) } catch (_: Exception) {}
+                try { views.setTextViewText(R.id.widget_speed_text, "${speedKmH.toInt()}") } catch (_: Exception) {}
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             } catch (e: Exception) {
