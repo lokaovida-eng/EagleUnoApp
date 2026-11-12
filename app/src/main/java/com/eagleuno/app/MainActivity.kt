@@ -18,8 +18,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -38,7 +38,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -76,6 +78,15 @@ class MainActivity : ComponentActivity() {
         window.setBackgroundDrawableResource(android.R.color.black)
         window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
 
+        // Make window layout transparent and extend under display cutouts (Edge-to-Edge display on Z Flip 5 cover screen)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+
         try {
             if (Build.VERSION.SDK_INT >= 34) {
                 overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, android.R.anim.fade_in, android.R.anim.fade_out)
@@ -107,7 +118,7 @@ fun CyberpunkDashboardScreen() {
 
     // Metric States
     var speedKmH by remember { mutableFloatStateOf(0f) }
-    var distanceKm by remember { mutableFloatStateOf(0.00f) }
+    var distanceKm by remember { mutableDoubleStateOf(0.000) }
     var movingTimeMillis by remember { mutableLongStateOf(0L) }
     var previousSpeed by remember { mutableFloatStateOf(0f) }
     var accelerationRate by remember { mutableFloatStateOf(0f) }
@@ -127,47 +138,58 @@ fun CyberpunkDashboardScreen() {
     }
 
     // Calculate Acceleration Rate & Speed Change Direction
+    var lastSpeedTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(speedKmH) {
+        val now = System.currentTimeMillis()
+        val dt = ((now - lastSpeedTime) / 1000f).coerceAtLeast(0.05f)
         val diff = speedKmH - previousSpeed
-        accelerationRate = diff
-        isAccelerating = diff > 0.3f
-        isDecelerating = diff < -0.3f
+        accelerationRate = diff / dt
+        isAccelerating = diff > 0.2f
+        isDecelerating = diff < -0.2f
         previousSpeed = speedKmH
+        lastSpeedTime = now
     }
 
-    // Smooth speed float animation for fluid digital readout
+    // Ultra-snappy speed float animation for real-time digital readout without lag
     val animatedSpeedKmH by animateFloatAsState(
         targetValue = speedKmH,
-        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+        animationSpec = tween(durationMillis = 100, easing = FastOutLinearInEasing),
         label = "SpeedReadoutAnimation"
     )
 
     // Dynamic Speed Color based on Speed Range (Cyan -> Green -> Yellow -> Orange -> Red)
     val currentSpeedColor by animateColorAsState(
         targetValue = getSpeedColor(speedKmH),
-        animationSpec = tween(durationMillis = 400),
+        animationSpec = tween(durationMillis = 200),
         label = "SpeedColorAnimation"
     )
 
-    // Target RPM / Speed Domino Bar Progress:
-    // Direct speed mapping (0 to 160 km/h).
-    // Advances left-to-right when accelerating (domino effect),
-    // recedes right-to-left when decelerating,
-    // and stays locked at current position when cruising/steady speed.
+    // RPM / Speed Shift Light Bar Progress:
+    // Fast response simulation: When accelerating, RPM revs up rapidly towards top (80-100%).
+    // When decelerating or steady, recedes back smoothly to speed base level.
     val maxSpeedForBar = 160f
-    val targetRpmProgress = remember(speedKmH) {
+    val targetRpmProgress = remember(speedKmH, isAccelerating, isDecelerating, accelerationRate) {
+        val baseRatio = (speedKmH / maxSpeedForBar).coerceIn(0.04f, 1.0f)
         if (speedKmH <= 0.5f) {
-            0.03f // Slight idle light indicator
+            if (isAccelerating) 0.35f else 0.04f
+        } else if (isAccelerating) {
+            // Rapid RPM rev boost when acceleration pedal is pressed!
+            (baseRatio + 0.38f + (accelerationRate * 0.04f)).coerceIn(0.40f, 1.0f)
+        } else if (isDecelerating) {
+            (baseRatio - 0.08f).coerceIn(0.04f, 1.0f)
         } else {
-            (speedKmH / maxSpeedForBar).coerceIn(0.04f, 1.0f)
+            baseRatio
         }
     }
 
-    // Smooth domino-style transition for light bar fill
+    // Rapid tachometer light bar fill animation (100ms snappy response)
     val animatedRpmProgress by animateFloatAsState(
         targetValue = targetRpmProgress,
-        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
-        label = "RpmBarFill"
+        animationSpec = tween(
+            durationMillis = if (isAccelerating || isDecelerating) 90 else 160,
+            easing = FastOutSlowInEasing
+        ),
+        label = "SnappyRpmBarFill"
     )
 
     val isPreview = LocalInspectionMode.current
@@ -213,7 +235,7 @@ fun CyberpunkDashboardScreen() {
         }
     }
 
-    // GPS Sensor Listener
+    // GPS Sensor Listener with High-Precision Speed Calibration
     DisposableEffect(isPreview) {
         if (isPreview) {
             onDispose { }
@@ -223,23 +245,45 @@ fun CyberpunkDashboardScreen() {
             try {
                 locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
                 var lastLocation: Location? = null
+                var lastLocationTimestamp = 0L
 
                 locationListener = object : LocationListener {
                     override fun onLocationChanged(location: Location) {
                         try {
-                            val currentSpeed = if (location.hasSpeed()) location.speed * 3.6f else 0f
-                            speedKmH = currentSpeed.coerceAtLeast(0f)
+                            val now = System.currentTimeMillis()
+                            var currentSpeed = 0f
 
-                            if (lastLocation != null && currentSpeed > 0.8f && location.hasAccuracy() && location.accuracy < 35f) {
-                                val deltaMeters = lastLocation!!.distanceTo(location)
-                                if (deltaMeters in 0.8..300.0) {
-                                    distanceKm += (deltaMeters / 1000f)
+                            if (location.hasSpeed() && location.speed >= 0f) {
+                                currentSpeed = location.speed * 3.6f
+                            } else if (lastLocation != null && lastLocationTimestamp > 0) {
+                                val dtSec = (now - lastLocationTimestamp) / 1000f
+                                if (dtSec in 0.2f..5.0f) {
+                                    val meters = lastLocation!!.distanceTo(location)
+                                    currentSpeed = (meters / dtSec) * 3.6f
                                 }
                             }
-                            lastLocation = location
 
-                            NormalWidgetProvider.updateAllWidgets(context, speedKmH, distanceKm)
-                            CoverScreenWidgetProvider.updateAllCoverWidgets(context, speedKmH)
+                            // Noise filter when stationary
+                            if (currentSpeed < 0.8f && location.hasAccuracy() && location.accuracy > 25f) {
+                                currentSpeed = 0f
+                            }
+
+                            speedKmH = currentSpeed.coerceIn(0f, 350f)
+
+                            // Distance accumulation calibration
+                            if (lastLocation != null && speedKmH > 0.5f) {
+                                val deltaMeters = lastLocation!!.distanceTo(location)
+                                val maxAllowedAccuracy = if (location.hasAccuracy()) location.accuracy else 35f
+                                if (deltaMeters in 0.3..250.0 && maxAllowedAccuracy < 45f) {
+                                    distanceKm += (deltaMeters / 1000.0)
+                                }
+                            }
+
+                            lastLocation = location
+                            lastLocationTimestamp = now
+
+                            NormalWidgetProvider.updateAllWidgets(context, speedKmH, distanceKm, movingTimeMillis)
+                            CoverScreenWidgetProvider.updateAllCoverWidgets(context, speedKmH, distanceKm, movingTimeMillis)
                         } catch (e: Throwable) {
                             e.printStackTrace()
                         }
@@ -255,12 +299,23 @@ fun CyberpunkDashboardScreen() {
                     (context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
                      context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED)
                 ) {
-                    locationManager.requestLocationUpdates(
-                        LocationManager.GPS_PROVIDER,
-                        200L,
-                        0.0f,
-                        locationListener
-                    )
+                    try {
+                        locationManager.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER,
+                            100L,
+                            0.0f,
+                            locationListener
+                        )
+                    } catch (_: Exception) {}
+
+                    try {
+                        locationManager.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER,
+                            400L,
+                            0.0f,
+                            locationListener
+                        )
+                    } catch (_: Exception) {}
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -286,10 +341,10 @@ fun CyberpunkDashboardScreen() {
 
     fun resetMetrics() {
         triggerHaptic()
-        distanceKm = 0f
+        distanceKm = 0.0
         movingTimeMillis = 0L
-        NormalWidgetProvider.updateAllWidgets(context, 0f, 0f)
-        CoverScreenWidgetProvider.updateAllCoverWidgets(context, 0f)
+        NormalWidgetProvider.updateAllWidgets(context, 0f, 0.0, 0L)
+        CoverScreenWidgetProvider.updateAllCoverWidgets(context, 0f, 0.0, 0L)
     }
 
     // Format Trip Time as HH:MM:SS
@@ -298,161 +353,157 @@ fun CyberpunkDashboardScreen() {
     val seconds = (movingTimeMillis % 60000L) / 1000L
     val formattedTime = "%02d:%02d:%02d".format(hours, minutes, seconds)
 
-    // Fullscreen Cyberpunk Outer Layout (Adaptive Framing for Z Flip 5 Cover & Main Displays)
+    // Fullscreen Cyberpunk Outer Container (100% Zero Black Borders on Z Flip 5 Cover Screen)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
-            .systemBarsPadding()
-            .padding(horizontal = 6.dp, vertical = 4.dp),
+            .background(Color(0xFF03060B))
+            .border(
+                width = 2.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF00FFCC),
+                        Color(0xFFFF0055),
+                        Color(0xFF00FFCC)
+                    )
+                ),
+                shape = androidx.compose.ui.graphics.RectangleShape
+            ),
         contentAlignment = Alignment.Center
     ) {
-        val isCompactDisplay = this.maxHeight < 420.dp || this.maxWidth < 380.dp
-        val speedFontSize = if (isCompactDisplay) 66.sp else 78.sp
-        val dividerHeight = if (isCompactDisplay) 72.dp else 88.dp
-        val metricsSpacing = if (isCompactDisplay) 10.dp else 16.dp
-        val outerCardRadius = if (isCompactDisplay) 18.dp else 22.dp
+        val isCompactDisplay = this.maxHeight < 450.dp || this.maxWidth < 400.dp
+        val speedFontSize = if (isCompactDisplay) 72.sp else 86.sp
+        val dividerHeight = if (isCompactDisplay) 76.dp else 92.dp
+        val metricsSpacing = if (isCompactDisplay) 8.dp else 14.dp
 
-        // Main Dashboard Card (Polished Frame aligned for Z Flip 5 Flex Window & Main Display)
-        Box(
+        // Fullscreen edge-to-edge content layout
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .clip(RoundedCornerShape(outerCardRadius))
-                .background(Color(0xFF03060B))
-                .border(
-                    width = 1.2.dp,
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF00FFCC).copy(alpha = 0.6f),
-                            Color(0xFFFF0055).copy(alpha = 0.35f),
-                            Color(0xFF00FFCC).copy(alpha = 0.25f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(outerCardRadius)
-                )
+                .fillMaxSize()
                 .padding(
-                    horizontal = if (isCompactDisplay) 10.dp else 14.dp,
-                    vertical = if (isCompactDisplay) 8.dp else 12.dp
-                )
+                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding().coerceAtLeast(6.dp),
+                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding().coerceAtLeast(6.dp),
+                    start = 8.dp,
+                    end = 8.dp
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+            // 1. HEADER BAR
+            HeaderBar(
+                compassDirection = compassDirection,
+                onBackClick = {
+                    triggerHaptic()
+                    (context as? Activity)?.finish()
+                },
+                onResetClick = { resetMetrics() },
+                onAboutClick = {
+                    triggerHaptic()
+                    showAboutDialog = true
+                }
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            // 2. CENTRAL SECTION (VELOCÍMETRO + MÉTRICAS)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // 1. HEADER MINIMALISTA
-                HeaderBar(
-                    compassDirection = compassDirection,
-                    onBackClick = {
-                        triggerHaptic()
-                        (context as? Activity)?.finish()
-                    },
-                    onResetClick = { resetMetrics() },
-                    onAboutClick = {
-                        triggerHaptic()
-                        showAboutDialog = true
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(if (isCompactDisplay) 4.dp else 8.dp))
-
-                // 2. CENTRAL SECTION (DIVISÃO EM DOIS MÓDULOS)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                // MÓDULO ESQUERDO: VELOCÍMETRO GIGANTE NEON 3D
+                Column(
+                    modifier = Modifier.weight(1.15f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    // MÓDULO ESQUERDO (VELOCÍMETRO GIGANTE COM NEON GLOW 3D)
-                    Column(
-                        modifier = Modifier.weight(1.1f),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        NeonSpeedText(
-                            speed = "${animatedSpeedKmH.toInt()}",
-                            fontSize = speedFontSize,
-                            color = currentSpeedColor
-                        )
-                        Text(
-                            text = "km/h",
-                            fontSize = if (isCompactDisplay) 13.sp else 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontStyle = FontStyle.Italic,
-                            fontFamily = FontFamily.Monospace,
-                            color = currentSpeedColor
-                        )
-                    }
-
-                    // LINHA VERTICAL NEON PONTILLADA
-                    DottedDivider(
-                        modifier = Modifier
-                            .height(dividerHeight)
-                            .width(2.dp)
+                    NeonSpeedText(
+                        speed = "${animatedSpeedKmH.toInt()}",
+                        fontSize = speedFontSize,
+                        color = currentSpeedColor
                     )
-
-                    // MÓDULO DIREITO (MÉTRICAS DA ESTRADA - FONTE DIGITAL)
-                    Column(
-                        modifier = Modifier
-                            .weight(1.1f)
-                            .padding(start = if (isCompactDisplay) 8.dp else 12.dp),
-                        horizontalAlignment = Alignment.Start,
-                        verticalArrangement = Arrangement.spacedBy(metricsSpacing)
-                    ) {
-                        // Linha 1: Distância
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            RoadIcon(
-                                modifier = Modifier.size(if (isCompactDisplay) 24.dp else 28.dp),
-                                color = Color(0xFF00FFCC)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "%.2f km".format(distanceKm).replace('.', ','),
-                                fontSize = if (isCompactDisplay) 16.sp else 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF00FFCC)
-                            )
-                        }
-
-                        // Linha 2: Duração
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            StopwatchIcon(
-                                modifier = Modifier.size(if (isCompactDisplay) 24.dp else 28.dp),
-                                color = Color(0xFF00FFCC)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = formattedTime,
-                                fontSize = if (isCompactDisplay) 16.sp else 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Monospace,
-                                color = Color(0xFF00FFCC)
-                            )
-                        }
-                    }
+                    Text(
+                        text = "km/h",
+                        fontSize = if (isCompactDisplay) 14.sp else 16.sp,
+                        fontWeight = FontWeight.Black,
+                        fontStyle = FontStyle.Italic,
+                        fontFamily = FontFamily.Monospace,
+                        color = currentSpeedColor
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(if (isCompactDisplay) 8.dp else 12.dp))
-
-                // 3. BARRA DE PERFORMANCE INFERIOR (RPM SPEED DOMINO BAR)
-                NeonRpmBar(
-                    progress = animatedRpmProgress,
-                    isAccelerating = isAccelerating,
-                    isDecelerating = isDecelerating,
+                // DIVISOR VERTICAL NEON PONTILHADO
+                DottedDivider(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(18.dp)
+                        .height(dividerHeight)
+                        .width(2.dp)
                 )
+
+                // MÓDULO DIREITO: MÉTRICAS DA ESTRADA
+                Column(
+                    modifier = Modifier
+                        .weight(1.05f)
+                        .padding(start = if (isCompactDisplay) 8.dp else 12.dp),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(metricsSpacing)
+                ) {
+                    // Distância (KM)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        RoadIcon(
+                            modifier = Modifier.size(if (isCompactDisplay) 24.dp else 28.dp),
+                            color = Color(0xFF00FFCC)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "%.2f km".format(distanceKm).replace('.', ','),
+                            fontSize = if (isCompactDisplay) 16.sp else 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color(0xFF00FFCC)
+                        )
+                    }
+
+                    // Duração Tempo
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        StopwatchIcon(
+                            modifier = Modifier.size(if (isCompactDisplay) 24.dp else 28.dp),
+                            color = Color(0xFF00FFCC)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = formattedTime,
+                            fontSize = if (isCompactDisplay) 16.sp else 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color(0xFF00FFCC)
+                        )
+                    }
+                }
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // 3. BARRA DE PERFORMANCE RPM (LED SHIFT LIGHT BAR)
+            NeonRpmBar(
+                progress = animatedRpmProgress,
+                isAccelerating = isAccelerating,
+                isDecelerating = isDecelerating,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (isCompactDisplay) 18.dp else 22.dp)
+                    .padding(horizontal = 2.dp)
+            )
+
+            Spacer(modifier = Modifier.height(2.dp))
         }
 
         // DIÁLOGO SOBRE & PAYPAL
@@ -556,7 +607,7 @@ fun CyberpunkDashboardScreen() {
 }
 
 // ---------------------------------------------------------------------------
-// COMPONENTES VETORIAIS E GRÁFICOS PERSONALIZADOS
+// COMPONENTES VETORIAIS E GRÁFICOS NEON PERSONALIZADOS
 // ---------------------------------------------------------------------------
 
 @Composable
@@ -570,55 +621,61 @@ fun NeonSpeedText(
         contentAlignment = Alignment.Center,
         modifier = modifier
     ) {
-        // Deep Soft Outer Aura Glow
+        // Layer 1: Ambient Background Soft Glow (Large Diffuse Aura)
         Text(
             text = speed,
             fontSize = fontSize,
             fontWeight = FontWeight.Black,
             fontStyle = FontStyle.Italic,
             fontFamily = FontFamily.Monospace,
-            color = color.copy(alpha = 0.25f),
-            letterSpacing = (-1).sp,
+            color = color.copy(alpha = 0.35f),
+            letterSpacing = (-2).sp,
             modifier = Modifier.graphicsLayer {
-                scaleX = 1.12f
-                scaleY = 1.12f
-                alpha = 0.5f
+                scaleX = 1.15f
+                scaleY = 1.15f
+                alpha = 0.45f
             }
         )
-        // Sharp Outer Glow Contour (3D Neon Outline)
-        Text(
-            text = speed,
-            fontSize = fontSize,
-            fontWeight = FontWeight.Black,
-            fontStyle = FontStyle.Italic,
-            fontFamily = FontFamily.Monospace,
-            color = color.copy(alpha = 0.5f),
-            letterSpacing = (-1).sp,
-            modifier = Modifier.graphicsLayer {
-                scaleX = 1.05f
-                scaleY = 1.05f
-            }
+
+        // Layer 2: 8-Directional Neon Contour Stroke for 3D Borda Effect
+        val strokeColor = color.copy(alpha = 0.90f)
+        val strokeOffsets = listOf(
+            Offset(-2.5f, -2.5f), Offset(2.5f, -2.5f), Offset(-2.5f, 2.5f), Offset(2.5f, 2.5f),
+            Offset(-3.5f, 0f), Offset(3.5f, 0f), Offset(0f, -3.5f), Offset(0f, 3.5f)
         )
-        // Main Core Bright Neon Text
+        for (offset in strokeOffsets) {
+            Text(
+                text = speed,
+                fontSize = fontSize,
+                fontWeight = FontWeight.Black,
+                fontStyle = FontStyle.Italic,
+                fontFamily = FontFamily.Monospace,
+                color = strokeColor,
+                letterSpacing = (-2).sp,
+                modifier = Modifier.offset(x = offset.x.dp, y = offset.y.dp)
+            )
+        }
+
+        // Layer 3: Main Core Text (Bright Vivid Neon Core Fill)
         Text(
             text = speed,
             fontSize = fontSize,
             fontWeight = FontWeight.Black,
             fontStyle = FontStyle.Italic,
             fontFamily = FontFamily.Monospace,
-            color = color,
-            letterSpacing = (-1).sp
+            color = Color.White,
+            letterSpacing = (-2).sp
         )
     }
 }
 
 fun getSpeedColor(speedKmH: Float): Color {
     return when {
-        speedKmH < 30f -> Color(0xFF00FFCC) // Ciano Neon (Baixa velocidade / Urbano)
-        speedKmH < 60f -> Color(0xFF00FF66) // Verde Neon (Velocidade média)
-        speedKmH < 90f -> Color(0xFFFFCC00) // Amarelo Neon (Velocidade cruzeiro)
-        speedKmH < 120f -> Color(0xFFFF6600) // Laranja Neon (Rodovia)
-        else -> Color(0xFFFF0055)            // Vermelho Elétrico / Rosa (Alta velocidade)
+        speedKmH < 30f -> Color(0xFF00FFCC) // Ciano Neon (Urbano)
+        speedKmH < 60f -> Color(0xFF00FF66) // Verde Neon
+        speedKmH < 90f -> Color(0xFFFFCC00) // Amarelo Neon
+        speedKmH < 120f -> Color(0xFFFF6600) // Laranja Neon
+        else -> Color(0xFFFF0055)            // Rosa / Vermelho Elétrico
     }
 }
 
@@ -644,9 +701,9 @@ fun HeaderBar(
         ) {
             Text(
                 text = "<",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Light,
-                color = Color.White.copy(alpha = 0.85f)
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White.copy(alpha = 0.9f)
             )
         }
 
@@ -663,13 +720,14 @@ fun HeaderBar(
             )
             CompassIcon(
                 modifier = Modifier.size(16.dp),
-                color = Color.White
+                color = Color(0xFF00FFCC)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = compassDirection,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Monospace,
                 color = Color.White
             )
             Text(
@@ -719,14 +777,14 @@ fun HeaderBar(
 @Composable
 fun DottedDivider(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
-        val strokeW = 1.8.dp.toPx()
+        val strokeW = 2.dp.toPx()
         val dashH = 4.dp.toPx()
         val gapH = 4.dp.toPx()
         var currentY = 0f
 
         while (currentY < size.height) {
             drawLine(
-                color = Color(0xFF00FFCC).copy(alpha = 0.5f),
+                color = Color(0xFF00FFCC).copy(alpha = 0.6f),
                 start = Offset(size.width / 2f, currentY),
                 end = Offset(size.width / 2f, (currentY + dashH).coerceAtMost(size.height)),
                 strokeWidth = strokeW,
@@ -745,85 +803,77 @@ fun NeonRpmBar(
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier) {
-        val w = size.width
-        val h = size.height
-        val cornerRadius = h / 2.2f
-        val currentProgress = progress.coerceIn(0.02f, 1f)
-        val slant = h * 0.6f
+        val totalSegments = 16
+        val gap = 3.dp.toPx()
+        val totalWidth = size.width
+        val barHeight = size.height
+        val segmentWidth = (totalWidth - (gap * (totalSegments - 1))) / totalSegments
+        val activeCount = (progress.coerceIn(0f, 1f) * totalSegments).toInt().coerceAtLeast(1)
 
-        // Cores do Gradiente Neon Suave (Verde -> Ciano -> Amarelo -> Laranja -> Vermelho Rosa Neon)
-        val gradientColors = listOf(
-            Color(0xFF00FF66), // Verde Neon
-            Color(0xFF00FFCC), // Ciano Neon
-            Color(0xFFFFCC00), // Amarelo Neon
-            Color(0xFFFF6600), // Laranja Neon
-            Color(0xFFFF0055)  // Rosa Vermelho Neon
-        )
-
-        // Trilha de Fundo Chanfrada Elegante
-        val trackPath = Path().apply {
-            moveTo(cornerRadius, 0f)
-            lineTo((w - slant).coerceAtLeast(cornerRadius), 0f)
-            lineTo(w, h)
-            lineTo(cornerRadius, h)
-            arcTo(
-                rect = androidx.compose.ui.geometry.Rect(0f, 0f, cornerRadius * 2, h),
-                startAngleDegrees = 90f,
-                sweepAngleDegrees = 180f,
-                forceMoveTo = false
+        for (i in 0 until totalSegments) {
+            val startX = i * (segmentWidth + gap)
+            val segmentRect = Rect(
+                left = startX,
+                top = 0f,
+                right = startX + segmentWidth,
+                bottom = barHeight
             )
-            close()
+
+            val segmentColor = when {
+                i < 5 -> Color(0xFF00FFCC)   // Ciano Neon
+                i < 9 -> Color(0xFF00FF66)   // Verde Neon
+                i < 12 -> Color(0xFFFFCC00)  // Amarelo Neon
+                i < 14 -> Color(0xFFFF6600)  // Laranja Neon
+                else -> Color(0xFFFF0055)     // Vermelho Rosa Neon Elétrico
+            }
+
+            val isActive = i < activeCount
+
+            if (isActive) {
+                val alpha = if (isAccelerating) 1.0f else 0.88f
+
+                // Bloco LED Preenchimento Neon
+                drawRoundRect(
+                    color = segmentColor.copy(alpha = alpha),
+                    topLeft = Offset(segmentRect.left, segmentRect.top),
+                    size = Size(segmentRect.width, segmentRect.height),
+                    cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
+                )
+
+                // Núcleo Interno Branco Brilhante (Tubo Neon Aceso)
+                drawRoundRect(
+                    color = Color.White.copy(alpha = if (isAccelerating) 0.75f else 0.45f),
+                    topLeft = Offset(segmentRect.left + 1.dp.toPx(), segmentRect.top + 2.dp.toPx()),
+                    size = Size(segmentRect.width - 2.dp.toPx(), segmentRect.height / 3f),
+                    cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx())
+                )
+
+                // Borda de Contorno Neon Vibrante
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.85f),
+                    topLeft = Offset(segmentRect.left, segmentRect.top),
+                    size = Size(segmentRect.width, segmentRect.height),
+                    cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()),
+                    style = Stroke(width = 1.dp.toPx())
+                )
+            } else {
+                // LED Desligado (Slot Escuro com Contorno Neon Discreto)
+                drawRoundRect(
+                    color = Color(0xFF060D17),
+                    topLeft = Offset(segmentRect.left, segmentRect.top),
+                    size = Size(segmentRect.width, segmentRect.height),
+                    cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
+                )
+
+                drawRoundRect(
+                    color = segmentColor.copy(alpha = 0.22f),
+                    topLeft = Offset(segmentRect.left, segmentRect.top),
+                    size = Size(segmentRect.width, segmentRect.height),
+                    cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx()),
+                    style = Stroke(width = 0.8.dp.toPx())
+                )
+            }
         }
-
-        // Desenhar Fundo Escuro
-        drawPath(
-            path = trackPath,
-            color = Color(0xFF060B14)
-        )
-        // Borda Fina de Contorno da Trilha
-        drawPath(
-            path = trackPath,
-            color = Color(0xFF00FFCC).copy(alpha = 0.25f),
-            style = Stroke(width = 1.2.dp.toPx())
-        )
-
-        // Tubo de Luz Neon Aceso Dinâmico
-        val activeWidth = (w * currentProgress).coerceAtLeast(cornerRadius * 2)
-
-        val fillPath = Path().apply {
-            val rightSlant = if (activeWidth >= w - slant) (activeWidth - (w - slant)).coerceAtMost(slant) else 0f
-            moveTo(cornerRadius, 0f)
-            lineTo((activeWidth - rightSlant).coerceAtLeast(cornerRadius), 0f)
-            lineTo(activeWidth, h)
-            lineTo(cornerRadius, h)
-            arcTo(
-                rect = androidx.compose.ui.geometry.Rect(0f, 0f, cornerRadius * 2, h),
-                startAngleDegrees = 90f,
-                sweepAngleDegrees = 180f,
-                forceMoveTo = false
-            )
-            close()
-        }
-
-        val fillBrush = Brush.horizontalGradient(
-            colors = gradientColors,
-            startX = 0f,
-            endX = w
-        )
-
-        // Brilho Vibrante do Tubo Neon
-        drawPath(
-            path = fillPath,
-            brush = fillBrush,
-            alpha = if (isAccelerating) 0.98f else 0.88f
-        )
-
-        // Linha Central Brilhante Interna
-        drawPath(
-            path = fillPath,
-            color = Color.White.copy(alpha = if (isAccelerating) 0.65f else 0.35f),
-            style = Stroke(width = 1.5.dp.toPx())
-        )
     }
 }
 
@@ -834,7 +884,6 @@ fun RoadIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC)) {
         val h = size.height
         val strokeW = 2.5.dp.toPx()
 
-        // Linha esquerda convergente
         drawLine(
             color = color,
             start = Offset(w * 0.42f, 0f),
@@ -843,7 +892,6 @@ fun RoadIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC)) {
             cap = StrokeCap.Round
         )
 
-        // Linha direita convergente
         drawLine(
             color = color,
             start = Offset(w * 0.58f, 0f),
@@ -852,7 +900,6 @@ fun RoadIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC)) {
             cap = StrokeCap.Round
         )
 
-        // Tracejado central
         val dashH = h * 0.2f
         val gapH = h * 0.12f
         var currentY = h * 0.08f
@@ -878,7 +925,6 @@ fun StopwatchIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC
         val center = Offset(w / 2f, h * 0.56f)
         val radius = minOf(w, h) * 0.36f
 
-        // Botão superior do cronômetro
         drawLine(
             color = color,
             start = Offset(w / 2f, h * 0.04f),
@@ -894,7 +940,6 @@ fun StopwatchIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC
             cap = StrokeCap.Round
         )
 
-        // Botão lateral
         drawLine(
             color = color,
             start = Offset(w * 0.72f, h * 0.22f),
@@ -903,7 +948,6 @@ fun StopwatchIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC
             cap = StrokeCap.Round
         )
 
-        // Círculo principal
         drawCircle(
             color = color,
             radius = radius,
@@ -911,7 +955,6 @@ fun StopwatchIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC
             style = Stroke(width = strokeW)
         )
 
-        // Ponteiros de hora e minuto
         drawLine(
             color = color,
             start = center,
@@ -953,7 +996,6 @@ fun ResetIcon(modifier: Modifier = Modifier, color: Color = Color(0xFF00FFCC)) {
             style = Stroke(width = strokeW, cap = StrokeCap.Round)
         )
 
-        // Seta na ponta do arco
         val arrowPath = Path().apply {
             moveTo(w * 0.76f, h * 0.12f)
             lineTo(w * 0.88f, h * 0.32f)
@@ -980,7 +1022,6 @@ fun CompassIcon(modifier: Modifier = Modifier, color: Color = Color.White) {
             style = Stroke(width = strokeW)
         )
 
-        // Agulha apontando para o Norte
         val needlePath = Path().apply {
             moveTo(center.x, center.y - radius * 0.75f)
             lineTo(center.x - radius * 0.3f, center.y + radius * 0.35f)
@@ -1007,14 +1048,12 @@ fun InfoIcon(modifier: Modifier = Modifier, color: Color = Color(0xFFFF0055)) {
             style = Stroke(width = strokeW)
         )
 
-        // Ponto do 'i'
         drawCircle(
             color = color,
             radius = 1.8.dp.toPx(),
             center = Offset(w / 2f, h * 0.30f)
         )
 
-        // Haste do 'i'
         drawLine(
             color = color,
             start = Offset(w / 2f, h * 0.44f),
@@ -1047,4 +1086,3 @@ fun CyberpunkDashboardScreenPreview() {
         CyberpunkDashboardScreen()
     }
 }
-

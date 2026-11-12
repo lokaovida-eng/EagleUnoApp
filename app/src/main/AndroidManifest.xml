@@ -88,6 +88,9 @@
             <meta-data
                 android:name="com.samsung.android.keyguard.show_on_cover"
                 android:value="true" />
+            <meta-data
+                android:name="com.samsung.android.widget.provider.category"
+                android:value="cover_screen" />
         </receiver>
     </application>
 

@@ -17,7 +17,7 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId, 0f)
+            updateAppWidget(context, appWidgetManager, appWidgetId, 0f, 0.0, 0L)
         }
     }
 
@@ -26,7 +26,9 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
-            speedKmH: Float = 0f
+            speedKmH: Float = 0f,
+            distanceKm: Double = 0.0,
+            movingTimeMillis: Long = 0L
         ) {
             try {
                 val views = RemoteViews(context.packageName, R.layout.widget_cover_layout)
@@ -45,7 +47,14 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
 
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
+                val hours = (movingTimeMillis / 3600000L)
+                val minutes = (movingTimeMillis % 3600000L) / 60000L
+                val seconds = (movingTimeMillis % 60000L) / 1000L
+                val formattedTime = "%02d:%02d:%02d".format(hours, minutes, seconds)
+
                 try { views.setTextViewText(R.id.widget_speed_text, "${speedKmH.toInt()}") } catch (_: Exception) {}
+                try { views.setTextViewText(R.id.widget_distance_text, "%.2f km".format(distanceKm).replace('.', ',')) } catch (_: Exception) {}
+                try { views.setTextViewText(R.id.widget_time_text, formattedTime) } catch (_: Exception) {}
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             } catch (e: Exception) {
@@ -53,14 +62,19 @@ class CoverScreenWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        fun updateAllCoverWidgets(context: Context, speedKmH: Float) {
+        fun updateAllCoverWidgets(
+            context: Context,
+            speedKmH: Float,
+            distanceKm: Double = 0.0,
+            movingTimeMillis: Long = 0L
+        ) {
             try {
                 val appWidgetManager = AppWidgetManager.getInstance(context)
                 val thisWidget = ComponentName(context, CoverScreenWidgetProvider::class.java)
                 val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
 
                 for (widgetId in allWidgetIds) {
-                    updateAppWidget(context, appWidgetManager, widgetId, speedKmH)
+                    updateAppWidget(context, appWidgetManager, widgetId, speedKmH, distanceKm, movingTimeMillis)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
