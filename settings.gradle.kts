@@ -1,14 +1,3 @@
-try {
-    val env = System.getenv()
-    val cl = env.javaClass
-    val field = cl.getDeclaredField("m")
-    field.isAccessible = true
-    @Suppress("UNCHECKED_CAST")
-    val writableEnv = field.get(env) as MutableMap<String, String>
-    writableEnv.remove("ANDROID_PREFS_ROOT")
-} catch (e: Exception) {
-    // Ignore
-}
 
 pluginManagement {
     repositories {
@@ -34,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "My Application"
+rootProject.name = "VelocimetroAutomotivo"
 include(":app")

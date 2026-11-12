@@ -2,6 +2,7 @@ package com.eagleuno.app
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -9,6 +10,7 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -25,9 +27,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,11 +49,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.eagleuno.app.ui.theme.MyApplicationTheme
 import com.eagleuno.app.ui.theme.*
 import kotlinx.coroutines.delay
@@ -103,6 +112,7 @@ fun CyberpunkDashboardScreen() {
     var isAccelerating by remember { mutableStateOf(false) }
     var isDecelerating by remember { mutableStateOf(false) }
     var compassDirection by remember { mutableStateOf("N") }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     // Driving Timer: Runs when moving (> 0.5 km/h)
     LaunchedEffect(Unit) {
@@ -151,84 +161,110 @@ fun CyberpunkDashboardScreen() {
         label = "RpmBarFill"
     )
 
+    val isPreview = LocalInspectionMode.current
+
     // Sensor Listener for Compass Heading
-    DisposableEffect(Unit) {
-        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
-        val orientationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ORIENTATION)
+    DisposableEffect(isPreview) {
+        if (isPreview) {
+            onDispose { }
+        } else {
+            var sensorManager: SensorManager? = null
+            var sensorListener: SensorEventListener? = null
+            try {
+                sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+                val orientationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ORIENTATION)
 
-        val sensorListener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent?) {
-                if (event != null && event.sensor.type == Sensor.TYPE_ORIENTATION) {
-                    val azimuth = event.values[0]
-                    compassDirection = getCardinalDirection(azimuth)
-                }
-            }
-
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-        }
-
-        if (sensorManager != null && orientationSensor != null) {
-            sensorManager.registerListener(sensorListener, orientationSensor, SensorManager.SENSOR_DELAY_UI)
-        }
-
-        onDispose {
-            sensorManager?.unregisterListener(sensorListener)
-        }
-    }
-
-    // GPS Sensor Listener
-    DisposableEffect(Unit) {
-        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        var lastLocation: Location? = null
-
-        val locationListener = object : LocationListener {
-            override fun onLocationChanged(location: Location) {
-                try {
-                    val currentSpeed = if (location.hasSpeed()) location.speed * 3.6f else 0f
-                    speedKmH = currentSpeed.coerceAtLeast(0f)
-
-                    if (lastLocation != null && currentSpeed > 0.8f && location.hasAccuracy() && location.accuracy < 35f) {
-                        val deltaMeters = lastLocation!!.distanceTo(location)
-                        if (deltaMeters in 0.8..300.0) {
-                            distanceKm += (deltaMeters / 1000f)
+                sensorListener = object : SensorEventListener {
+                    override fun onSensorChanged(event: SensorEvent?) {
+                        if (event != null && event.sensor.type == Sensor.TYPE_ORIENTATION) {
+                            val azimuth = event.values[0]
+                            compassDirection = getCardinalDirection(azimuth)
                         }
                     }
-                    lastLocation = location
 
-                    NormalWidgetProvider.updateAllWidgets(context, speedKmH, distanceKm)
-                    CoverScreenWidgetProvider.updateAllCoverWidgets(context, speedKmH)
+                    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+                }
+
+                if (sensorManager != null && orientationSensor != null) {
+                    sensorManager.registerListener(sensorListener, orientationSensor, SensorManager.SENSOR_DELAY_UI)
+                }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+
+            onDispose {
+                try {
+                    if (sensorManager != null && sensorListener != null) {
+                        sensorManager.unregisterListener(sensorListener)
+                    }
                 } catch (e: Throwable) {
                     e.printStackTrace()
                 }
             }
-
-            override fun onProviderEnabled(provider: String) {}
-            override fun onProviderDisabled(provider: String) {}
-            @Deprecated("Deprecated in API level 29")
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
         }
+    }
 
-        try {
-            if (locationManager != null &&
-                (context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
-                 context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED)
-            ) {
-                locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER,
-                    500L,
-                    0.5f,
-                    locationListener
-                )
-            }
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-
-        onDispose {
+    // GPS Sensor Listener
+    DisposableEffect(isPreview) {
+        if (isPreview) {
+            onDispose { }
+        } else {
+            var locationManager: LocationManager? = null
+            var locationListener: LocationListener? = null
             try {
-                locationManager?.removeUpdates(locationListener)
+                locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+                var lastLocation: Location? = null
+
+                locationListener = object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        try {
+                            val currentSpeed = if (location.hasSpeed()) location.speed * 3.6f else 0f
+                            speedKmH = currentSpeed.coerceAtLeast(0f)
+
+                            if (lastLocation != null && currentSpeed > 0.8f && location.hasAccuracy() && location.accuracy < 35f) {
+                                val deltaMeters = lastLocation!!.distanceTo(location)
+                                if (deltaMeters in 0.8..300.0) {
+                                    distanceKm += (deltaMeters / 1000f)
+                                }
+                            }
+                            lastLocation = location
+
+                            NormalWidgetProvider.updateAllWidgets(context, speedKmH, distanceKm)
+                            CoverScreenWidgetProvider.updateAllCoverWidgets(context, speedKmH)
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                        }
+                    }
+
+                    override fun onProviderEnabled(provider: String) {}
+                    override fun onProviderDisabled(provider: String) {}
+                    @Deprecated("Deprecated in API level 29")
+                    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
+                }
+
+                if (locationManager != null &&
+                    (context.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+                     context.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+                ) {
+                    locationManager.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        200L,
+                        0.0f,
+                        locationListener
+                    )
+                }
             } catch (e: Throwable) {
                 e.printStackTrace()
+            }
+
+            onDispose {
+                try {
+                    if (locationManager != null && locationListener != null) {
+                        locationManager.removeUpdates(locationListener)
+                    }
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
             }
         }
     }
@@ -303,7 +339,11 @@ fun CyberpunkDashboardScreen() {
                         triggerHaptic()
                         (context as? Activity)?.finish()
                     },
-                    onResetClick = { resetMetrics() }
+                    onResetClick = { resetMetrics() },
+                    onAboutClick = {
+                        triggerHaptic()
+                        showAboutDialog = true
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(if (isCompactDisplay) 4.dp else 8.dp))
@@ -408,6 +448,104 @@ fun CyberpunkDashboardScreen() {
                 )
             }
         }
+
+        // DIÁLOGO SOBRE & PAYPAL
+        if (showAboutDialog) {
+            Dialog(onDismissRequest = { showAboutDialog = false }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.92f)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0xFF080D18))
+                        .border(
+                            width = 1.5.dp,
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color(0xFF00FFCC),
+                                    Color(0xFFFF0055)
+                                )
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                        .padding(20.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Velocímetro Automotivo",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF00FFCC)
+                        )
+
+                        Text(
+                            text = "v1.4.0 • Alta Precisão GPS",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
+
+                        Spacer(modifier = Modifier.height(2.dp))
+
+                        Text(
+                            text = "Velocímetro digital HUD com moldura neon reativa à aceleração, cronômetro de viagem e suporte a telas dobráveis (Z Flip).",
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.85f),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Button(
+                            onClick = {
+                                triggerHaptic()
+                                try {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("https://www.paypal.com/donate/?hosted_button_id=REPB3R2VW4AVA")
+                                    )
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFF0055)
+                            )
+                        ) {
+                            Text(
+                                text = "Apoiar Projeto no PayPal 💳",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        TextButton(
+                            onClick = {
+                                triggerHaptic()
+                                showAboutDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Fechar",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -429,7 +567,8 @@ fun getSpeedColor(speedKmH: Float): Color {
 fun HeaderBar(
     compassDirection: String,
     onBackClick: () -> Unit,
-    onResetClick: () -> Unit
+    onResetClick: () -> Unit,
+    onAboutClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -439,7 +578,8 @@ fun HeaderBar(
         // Canto Esquerdo: Botão chevron '<'
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(32.dp)
+                .clip(CircleShape)
                 .clickable { onBackClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -481,17 +621,38 @@ fun HeaderBar(
             )
         }
 
-        // Canto Direito: Botão Zerar KM (Circular Loop Arrow)
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clickable { onResetClick() },
-            contentAlignment = Alignment.Center
+        // Canto Direito: Botões Sobre (ℹ) e Zerar KM (↺)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ResetIcon(
-                modifier = Modifier.size(20.dp),
-                color = Color(0xFF00FFCC)
-            )
+            // Botão Sobre / Apoiar
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .clickable { onAboutClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                InfoIcon(
+                    modifier = Modifier.size(20.dp),
+                    color = Color(0xFFFF0055)
+                )
+            }
+
+            // Botão Zerar KM
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .clickable { onResetClick() },
+                contentAlignment = Alignment.Center
+            ) {
+                ResetIcon(
+                    modifier = Modifier.size(20.dp),
+                    color = Color(0xFF00FFCC)
+                )
+            }
         }
     }
 }
@@ -779,6 +940,40 @@ fun CompassIcon(modifier: Modifier = Modifier, color: Color = Color.White) {
             close()
         }
         drawPath(path = needlePath, color = color)
+    }
+}
+
+@Composable
+fun InfoIcon(modifier: Modifier = Modifier, color: Color = Color(0xFFFF0055)) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val strokeW = 2.dp.toPx()
+        val center = Offset(w / 2f, h / 2f)
+        val radius = minOf(w, h) * 0.42f
+
+        drawCircle(
+            color = color,
+            radius = radius,
+            center = center,
+            style = Stroke(width = strokeW)
+        )
+
+        // Ponto do 'i'
+        drawCircle(
+            color = color,
+            radius = 1.8.dp.toPx(),
+            center = Offset(w / 2f, h * 0.30f)
+        )
+
+        // Haste do 'i'
+        drawLine(
+            color = color,
+            start = Offset(w / 2f, h * 0.44f),
+            end = Offset(w / 2f, h * 0.72f),
+            strokeWidth = 2.2.dp.toPx(),
+            cap = StrokeCap.Round
+        )
     }
 }
 

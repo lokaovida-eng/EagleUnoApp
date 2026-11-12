@@ -1,11 +1,11 @@
-# 🦅 Eagle Uno v1.4 - Translucent Speedometer & Dynamic RPM Reactive Neon Frame
+# 🚗 Velocímetro Automotivo v1.4 - Translucent Speedometer & Dynamic RPM Reactive Neon Frame
 
 [![Download APK](https://img.shields.io/badge/Download_APK-Direct_18MB_Installer-00F0FF?style=for-the-badge&logo=android)](https://github.com/lokaovida-eng/EagleUnoApp/raw/main/app-debug.apk)
 [![Version](https://img.shields.io/badge/Version-1.4.0-00FF66?style=for-the-badge)](https://github.com/lokaovida-eng/EagleUnoApp)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9.22-7F52FF?style=for-the-badge&logo=kotlin)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?style=for-the-badge&logo=android)](https://developer.android.com/jetpack/compose)
 
-**Eagle Uno** is a modern, high-precision Android GPS speedometer and trip monitoring application. Built with **100% window transparency**, **instant haptic button feedback**, and a **speed-reactive RPM neon border frame** (inspired by sports car shift lights), Eagle Uno provides an incredible visual driving experience.
+**Velocímetro Automotivo** is a modern, high-precision Android GPS speedometer and trip monitoring application. Built with **100% window transparency**, **instant haptic button feedback**, and a **speed-reactive RPM neon border frame** (inspired by sports car shift lights), Velocímetro Automotivo provides an incredible visual driving experience.
 
 ---
 
