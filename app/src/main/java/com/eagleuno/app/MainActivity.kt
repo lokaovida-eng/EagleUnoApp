@@ -50,10 +50,12 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -356,28 +358,23 @@ fun CyberpunkDashboardScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // MÓDULO ESQUERDO (VELOCÍMETRO GIGANTE COM COR DINÂMICA)
+                    // MÓDULO ESQUERDO (VELOCÍMETRO GIGANTE COM NEON GLOW 3D)
                     Column(
                         modifier = Modifier.weight(1.1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text(
-                            text = "${speedKmH.toInt()}",
+                        NeonSpeedText(
+                            speed = "${speedKmH.toInt()}",
                             fontSize = speedFontSize,
-                            fontWeight = FontWeight.Black,
-                            fontStyle = FontStyle.Italic,
-                            color = currentSpeedColor,
-                            letterSpacing = (-2).sp,
-                            modifier = Modifier.graphicsLayer {
-                                shadowElevation = 10.dp.toPx()
-                            }
+                            color = currentSpeedColor
                         )
                         Text(
                             text = "km/h",
                             fontSize = if (isCompactDisplay) 13.sp else 15.sp,
                             fontWeight = FontWeight.Bold,
                             fontStyle = FontStyle.Italic,
+                            fontFamily = FontFamily.Monospace,
                             color = currentSpeedColor
                         )
                     }
@@ -389,7 +386,7 @@ fun CyberpunkDashboardScreen() {
                             .width(2.dp)
                     )
 
-                    // MÓDULO DIREITO (MÉTRICAS DA ESTRADA)
+                    // MÓDULO DIREITO (MÉTRICAS DA ESTRADA - FONTE DIGITAL)
                     Column(
                         modifier = Modifier
                             .weight(1.1f)
@@ -411,6 +408,7 @@ fun CyberpunkDashboardScreen() {
                                 text = "%.2f km".format(distanceKm).replace('.', ','),
                                 fontSize = if (isCompactDisplay) 16.sp else 18.sp,
                                 fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
                                 color = Color(0xFF00FFCC)
                             )
                         }
@@ -429,6 +427,7 @@ fun CyberpunkDashboardScreen() {
                                 text = formattedTime,
                                 fontSize = if (isCompactDisplay) 16.sp else 18.sp,
                                 fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
                                 color = Color(0xFF00FFCC)
                             )
                         }
@@ -552,6 +551,44 @@ fun CyberpunkDashboardScreen() {
 // ---------------------------------------------------------------------------
 // COMPONENTES VETORIAIS E GRÁFICOS PERSONALIZADOS
 // ---------------------------------------------------------------------------
+
+@Composable
+fun NeonSpeedText(
+    speed: String,
+    fontSize: TextUnit,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+    ) {
+        // Outer Glow Contour Effect (3D Neon Outline)
+        Text(
+            text = speed,
+            fontSize = fontSize,
+            fontWeight = FontWeight.Black,
+            fontStyle = FontStyle.Italic,
+            fontFamily = FontFamily.Monospace,
+            color = color.copy(alpha = 0.4f),
+            letterSpacing = (-1).sp,
+            modifier = Modifier.graphicsLayer {
+                scaleX = 1.06f
+                scaleY = 1.06f
+            }
+        )
+        // Main Vibrant Neon Text
+        Text(
+            text = speed,
+            fontSize = fontSize,
+            fontWeight = FontWeight.Black,
+            fontStyle = FontStyle.Italic,
+            fontFamily = FontFamily.Monospace,
+            color = color,
+            letterSpacing = (-1).sp
+        )
+    }
+}
 
 fun getSpeedColor(speedKmH: Float): Color {
     return when {

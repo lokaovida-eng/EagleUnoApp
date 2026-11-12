@@ -12,8 +12,8 @@ android {
         applicationId = "com.eagleuno.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 17
-        versionName = "1.7"
+        versionCode = 18
+        versionName = "1.8"
     }
 
     buildFeatures {
