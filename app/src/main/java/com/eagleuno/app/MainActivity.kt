@@ -1,16 +1,18 @@
 package com.eagleuno.app
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,10 +28,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -111,17 +117,23 @@ fun CartoonNeonNotepadScreen() {
     var savedNotes by remember { mutableStateOf(loadNotesFromPrefs(prefs)) }
     var showHistoryDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     var activeBgIndex by remember { mutableIntStateOf(prefs.getInt("bg_color_index", 0)) }
 
     // Background Themes
     val bgThemes = listOf(
-        Color(0xFF0A0E18), // Dark Cyber Neon
-        Color(0xFF180A28), // Cartoon Purple
-        Color(0xFF280818), // Midnight Pink
-        Color(0xFF041A24), // Electric Cyan
-        Color(0xFF0F0F1A)  // Anime Dark
+        Color(0xFF03060B), // Dark Cyber Neon
+        Color(0xFF160A26), // Cartoon Purple
+        Color(0xFF260818), // Midnight Pink
+        Color(0xFF031824), // Electric Cyan
+        Color(0xFF0E0E18)  // Anime Dark
     )
-    val currentBgColor = bgThemes.getOrElse(activeBgIndex) { bgThemes[0] }
+    val targetBgColor = bgThemes.getOrElse(activeBgIndex) { bgThemes[0] }
+    val animatedBgColor by animateColorAsState(
+        targetValue = targetBgColor,
+        animationSpec = tween(durationMillis = 350),
+        label = "BgColorAnimation"
+    )
 
     fun triggerHaptic() {
         try {
@@ -144,12 +156,23 @@ fun CartoonNeonNotepadScreen() {
         // Sync with Widgets
         NormalWidgetProvider.updateAllWidgets(context, newNote.title, newNote.content)
         CoverScreenWidgetProvider.updateAllCoverWidgets(context, newNote.title, newNote.content)
+
+        Toast.makeText(context, "Nota salva com sucesso! 💾", Toast.LENGTH_SHORT).show()
     }
 
     fun startNewNote() {
         triggerHaptic()
         currentTitle = ""
         currentContent = ""
+    }
+
+    fun copyCurrentNote() {
+        triggerHaptic()
+        if (currentContent.isBlank()) return
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val clip = ClipData.newPlainText("Nota Neon", currentContent)
+        clipboard?.setPrimaryClip(clip)
+        Toast.makeText(context, "Copiado para a área de transferência! 📋", Toast.LENGTH_SHORT).show()
     }
 
     fun deleteNote(noteId: String) {
@@ -159,15 +182,20 @@ fun CartoonNeonNotepadScreen() {
         saveNotesToPrefs(prefs, updatedList)
 
         val latestNote = updatedList.firstOrNull()
-        NormalWidgetProvider.updateAllWidgets(context, latestNote?.title ?: "", latestNote?.content ?: "")
-        CoverScreenWidgetProvider.updateAllCoverWidgets(context, latestNote?.title ?: "", latestNote?.content ?: "")
+        NormalWidgetProvider.updateAllWidgets(context, latestNote?.title ?: "Bloco Neon", latestNote?.content ?: "Nenhuma nota recente")
+        CoverScreenWidgetProvider.updateAllCoverWidgets(context, latestNote?.title ?: "Bloco Neon", latestNote?.content ?: "Nenhuma nota recente")
     }
+
+    val wordCount = remember(currentContent) {
+        if (currentContent.isBlank()) 0 else currentContent.trim().split("\\s+".toRegex()).size
+    }
+    val charCount = currentContent.length
 
     // Outer Fullscreen Container (100% Zero Black Borders for Z Flip 5 Cover Screen)
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(currentBgColor)
+            .background(animatedBgColor)
             .padding(
                 top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding().coerceAtLeast(6.dp),
                 bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding().coerceAtLeast(6.dp),
@@ -271,33 +299,50 @@ fun CartoonNeonNotepadScreen() {
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Top
                 ) {
-                    // Note Title Field
-                    BasicTextField(
-                        value = currentTitle,
-                        onValueChange = { currentTitle = it },
-                        textStyle = TextStyle(
-                            fontSize = if (isCompactDisplay) 16.sp else 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Monospace,
-                            color = Color(0xFFFF0055)
-                        ),
-                        singleLine = true,
+                    // Note Title Field & Copy Button
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        decorationBox = { innerTextField ->
-                            Box {
-                                if (currentTitle.isEmpty()) {
-                                    Text(
-                                        text = "Título da Nota...",
-                                        fontSize = if (isCompactDisplay) 16.sp else 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        fontFamily = FontFamily.Monospace,
-                                        color = Color(0xFFFF0055).copy(alpha = 0.45f)
-                                    )
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicTextField(
+                            value = currentTitle,
+                            onValueChange = { currentTitle = it },
+                            textStyle = TextStyle(
+                                fontSize = if (isCompactDisplay) 16.sp else 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color(0xFFFF0055)
+                            ),
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                            decorationBox = { innerTextField ->
+                                Box {
+                                    if (currentTitle.isEmpty()) {
+                                        Text(
+                                            text = "Título da Nota...",
+                                            fontSize = if (isCompactDisplay) 16.sp else 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = Color(0xFFFF0055).copy(alpha = 0.45f)
+                                        )
+                                    }
+                                    innerTextField()
                                 }
-                                innerTextField()
                             }
+                        )
+
+                        if (currentContent.isNotEmpty()) {
+                            Text(
+                                text = "📋",
+                                fontSize = 16.sp,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable { copyCurrentNote() }
+                                    .padding(4.dp)
+                            )
                         }
-                    )
+                    }
 
                     Spacer(modifier = Modifier.height(6.dp))
 
@@ -306,8 +351,8 @@ fun CartoonNeonNotepadScreen() {
                     Spacer(modifier = Modifier.height(6.dp))
 
                     // Content Field
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        // Anime Fierce Eagle Mascot (Águia de Anime com Cara de Mau) em Fundo Suave
+                    Box(modifier = Modifier.weight(1f)) {
+                        // Anime Fierce Eagle Mascot em Fundo
                         if (currentContent.isEmpty()) {
                             Box(
                                 modifier = Modifier.fillMaxSize(),
@@ -357,6 +402,16 @@ fun CartoonNeonNotepadScreen() {
                             }
                         )
                     }
+
+                    // Contador de Caracteres / Palavras
+                    Text(
+                        text = "$charCount caracteres • $wordCount palavras",
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = Color.White.copy(alpha = 0.4f),
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+                    )
                 }
             }
 
@@ -413,7 +468,7 @@ fun CartoonNeonNotepadScreen() {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.95f)
-                        .fillMaxHeight(0.80f)
+                        .fillMaxHeight(0.85f)
                         .clip(RoundedCornerShape(20.dp))
                         .background(Color(0xFF0B101D))
                         .border(2.dp, Color(0xFFFF0055), RoundedCornerShape(20.dp))
@@ -430,9 +485,50 @@ fun CartoonNeonNotepadScreen() {
                             modifier = Modifier.fillMaxWidth()
                         )
 
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Campo de Busca
+                        BasicTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            textStyle = TextStyle(
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color.White
+                            ),
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF141E30))
+                                .border(1.dp, Color(0xFF00FFCC).copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            decorationBox = { innerTextField ->
+                                Box {
+                                    if (searchQuery.isEmpty()) {
+                                        Text(
+                                            text = "🔍 Pesquisar notas...",
+                                            fontSize = 12.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            color = Color.White.copy(alpha = 0.4f)
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            }
+                        )
+
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        if (savedNotes.isEmpty()) {
+                        val filteredNotes = remember(savedNotes, searchQuery) {
+                            if (searchQuery.isBlank()) savedNotes
+                            else savedNotes.filter {
+                                it.title.contains(searchQuery, ignoreCase = true) ||
+                                it.content.contains(searchQuery, ignoreCase = true)
+                            }
+                        }
+
+                        if (filteredNotes.isEmpty()) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -440,7 +536,7 @@ fun CartoonNeonNotepadScreen() {
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Nenhuma nota salva ainda.",
+                                    text = if (savedNotes.isEmpty()) "Nenhuma nota salva ainda." else "Nenhuma nota encontrada.",
                                     fontSize = 13.sp,
                                     fontFamily = FontFamily.Monospace,
                                     color = Color.White.copy(alpha = 0.5f)
@@ -451,7 +547,7 @@ fun CartoonNeonNotepadScreen() {
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                items(savedNotes) { note ->
+                                items(filteredNotes) { note ->
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -743,12 +839,12 @@ fun AnimeFierceEagleCanvas(
 fun saveNotesToPrefs(prefs: SharedPreferences, notes: List<NoteItem>) {
     try {
         val jsonArray = JSONArray()
-        for (note in notes) {
+        for ((id, title, content, timestampMillis) in notes) {
             val obj = JSONObject().apply {
-                put("id", note.id)
-                put("title", note.title)
-                put("content", note.content)
-                put("timestampMillis", note.timestampMillis)
+                put("id", id)
+                put("title", title)
+                put("content", content)
+                put("timestampMillis", timestampMillis)
             }
             jsonArray.put(obj)
         }
