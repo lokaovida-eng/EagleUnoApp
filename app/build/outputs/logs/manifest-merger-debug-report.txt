@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
 MERGED from [io.coil-kt:coil-gif:2.5.0] /home/deck/.gradle/caches/9.6.0/transforms/50000643e7bccea6f14df4f6e08eac84/transformed/jetified-coil-gif-2.5.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.material3:material3-android:1.2.0] /home/deck/.gradle/caches/9.6.0/transforms/756f6ab0382ce9dd44b45afbb1503742/transformed/jetified-material3-release/AndroidManifest.xml:17:1-22:12
 MERGED from [io.coil-kt:coil-compose:2.5.0] /home/deck/.gradle/caches/9.6.0/transforms/5a66ecbecc55b3529c4b73f7b6b27079/transformed/jetified-coil-compose-2.5.0/AndroidManifest.xml:2:1-7:12
@@ -65,29 +65,13 @@ MERGED from [androidx.arch.core:core-runtime:2.2.0] /home/deck/.gradle/caches/9.
 		INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml
 	xmlns:android
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:11-69
-uses-permission#android.permission.ACCESS_FINE_LOCATION
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:4:5-79
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:4:22-76
-uses-permission#android.permission.ACCESS_COARSE_LOCATION
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:5:5-81
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:5:22-78
 uses-permission#android.permission.POST_NOTIFICATIONS
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:6:5-77
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:4:5-77
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:6:22-74
-uses-permission#android.permission.FOREGROUND_SERVICE
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:7:5-77
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:7:22-74
-uses-permission#android.permission.WAKE_LOCK
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:8:5-68
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:8:22-65
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:4:22-74
 application
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:10:5-95:19
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:10:5-95:19
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:6:5-92:19
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:6:5-92:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /home/deck/.gradle/caches/9.6.0/transforms/23ac937b832a0e407d3463afc1212494/transformed/jetified-ui-tooling-release/AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /home/deck/.gradle/caches/9.6.0/transforms/23ac937b832a0e407d3463afc1212494/transformed/jetified-ui-tooling-release/AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] /home/deck/.gradle/caches/9.6.0/transforms/36ea671802a878cfa3f9407c32aca6c0/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
@@ -107,133 +91,135 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/deck/.gradle/caches/9
 	android:appComponentFactory
 		ADDED from [androidx.core:core:1.12.0] /home/deck/.gradle/caches/9.6.0/transforms/f2c1482756a9ec876c2d43cea4073d53/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
 	android:supportsRtl
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:17:9-35
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:13:9-35
 	android:label
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:15:9-41
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:11:9-41
 	android:fullBackupContent
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:13:9-54
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:9:9-54
 	android:roundIcon
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:16:9-54
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:12:9-54
 	android:icon
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:14:9-43
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:10:9-43
 	android:allowBackup
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:11:9-35
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:7:9-35
 	android:theme
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:18:9-51
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:14:9-51
 	android:dataExtractionRules
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:12:9-65
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:8:9-65
 meta-data#com.samsung.android.foldable.cover.display.support
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:21:9-23:36
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:17:9-19:36
 	android:value
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:23:13-33
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:19:13-33
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:22:13-78
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:18:13-78
 meta-data#com.samsung.android.activity.showOnCover
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:24:9-26:36
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:20:9-22:36
 	android:value
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:26:13-33
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:22:13-33
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:25:13-68
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:21:13-68
 meta-data#com.samsung.android.multistar.cover.display.support
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:27:9-29:36
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:23:9-25:36
 	android:value
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:29:13-33
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:25:13-33
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:28:13-79
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:24:13-79
 activity#com.eagleuno.app.MainActivity
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:31:9-55:20
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:27:9-51:20
 	android:label
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:34:13-45
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:30:13-45
 	android:exported
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:33:13-36
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:29:13-36
 	android:resizeableActivity
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:36:13-46
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:32:13-46
 	android:configChanges
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:37:13-91
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:33:13-91
 	android:theme
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:35:13-55
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:31:13-55
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:32:13-41
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:28:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER+category:name:android.intent.category.SECONDARY_HOME+category:name:com.samsung.android.intent.category.COVER_LAUNCHER
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:49:13-54:29
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:45:13-50:29
 action#android.intent.action.MAIN
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:50:17-69
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:46:17-69
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:50:25-66
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:46:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:51:17-77
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:47:17-77
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:51:27-74
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:47:27-74
 category#android.intent.category.SECONDARY_HOME
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:52:17-83
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:48:17-83
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:52:27-80
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:48:27-80
 category#com.samsung.android.intent.category.COVER_LAUNCHER
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:53:17-95
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:49:17-95
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:53:27-92
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:49:27-92
 receiver#com.eagleuno.app.NormalWidgetProvider
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:57:9-66:20
-	android:exported
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:59:13-36
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:58:13-49
-intent-filter#action:name:android.appwidget.action.APPWIDGET_UPDATE
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:60:13-62:29
-action#android.appwidget.action.APPWIDGET_UPDATE
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:61:17-84
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:61:25-81
-meta-data#android.appwidget.provider
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:63:13-65:62
-	android:resource
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:65:17-59
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:64:17-58
-receiver#com.eagleuno.app.CoverScreenWidgetProvider
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:68:9-94:20
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:53:9-63:20
 	android:label
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:71:13-45
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:56:13-45
 	android:exported
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:70:13-36
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:55:13-36
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:69:13-54
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:54:13-49
+intent-filter#action:name:android.appwidget.action.APPWIDGET_UPDATE
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:57:13-59:29
+action#android.appwidget.action.APPWIDGET_UPDATE
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:58:17-84
+	android:name
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:58:25-81
+meta-data#android.appwidget.provider
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:60:13-62:62
+	android:resource
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:62:17-59
+	android:name
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:61:17-58
+receiver#com.eagleuno.app.CoverScreenWidgetProvider
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:65:9-91:20
+	android:label
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:68:13-45
+	android:exported
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:67:13-36
+	android:name
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:66:13-54
 intent-filter#action:name:android.appwidget.action.APPWIDGET_UPDATE+action:name:com.samsung.android.widget.action.COVER_WIDGET_UPDATE
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:72:13-75:29
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:69:13-72:29
 action#com.samsung.android.widget.action.COVER_WIDGET_UPDATE
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:74:17-96
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:71:17-96
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:74:25-93
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:71:25-93
 meta-data#com.samsung.android.widget.show_on_cover
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:76:13-78:40
+	android:value
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:78:17-37
+	android:name
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:77:17-72
+meta-data#com.samsung.android.cover.display.support
 ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:79:13-81:40
 	android:value
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:81:17-37
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:80:17-72
-meta-data#com.samsung.android.cover.display.support
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:80:17-73
+meta-data#com.samsung.android.widget.cover_display_support
 ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:82:13-84:40
 	android:value
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:84:17-37
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:83:17-73
-meta-data#com.samsung.android.widget.cover_display_support
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:83:17-80
+meta-data#com.samsung.android.keyguard.show_on_cover
 ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:85:13-87:40
 	android:value
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:87:17-37
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:86:17-80
-meta-data#com.samsung.android.keyguard.show_on_cover
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:88:13-90:40
-	android:value
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:90:17-37
-	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:89:17-74
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:86:17-74
 meta-data#com.samsung.android.widget.provider.category
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:91:13-93:48
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:88:13-90:48
 	android:value
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:93:17-45
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:90:17-45
 	android:name
-		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:92:17-76
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:89:17-76
 uses-sdk
 INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml

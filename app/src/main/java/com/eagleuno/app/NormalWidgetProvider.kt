@@ -16,7 +16,7 @@ class NormalWidgetProvider : AppWidgetProvider() {
         appWidgetIds: IntArray
     ) {
         for (appWidgetId in appWidgetIds) {
-            updateAppWidget(context, appWidgetManager, appWidgetId, 0f, 0.0, 0L)
+            updateAppWidget(context, appWidgetManager, appWidgetId, "Bloco Neon", "Nenhuma nota recente")
         }
     }
 
@@ -25,9 +25,8 @@ class NormalWidgetProvider : AppWidgetProvider() {
             context: Context,
             appWidgetManager: AppWidgetManager,
             appWidgetId: Int,
-            speedKmH: Float = 0f,
-            distanceKm: Double = 0.0,
-            movingTimeMillis: Long = 0L
+            title: String = "Bloco Neon",
+            content: String = "Nenhuma nota recente"
         ) {
             try {
                 val views = RemoteViews(context.packageName, R.layout.widget_normal_layout)
@@ -45,14 +44,8 @@ class NormalWidgetProvider : AppWidgetProvider() {
 
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
 
-                val hours = (movingTimeMillis / 3600000L)
-                val minutes = (movingTimeMillis % 3600000L) / 60000L
-                val seconds = (movingTimeMillis % 60000L) / 1000L
-                val formattedTime = "%02d:%02d:%02d".format(hours, minutes, seconds)
-
-                views.setTextViewText(R.id.widget_speed_text, speedKmH.toInt().toString())
-                views.setTextViewText(R.id.widget_distance_text, "%.2f km".format(distanceKm).replace('.', ','))
-                views.setTextViewText(R.id.widget_time_text, formattedTime)
+                views.setTextViewText(R.id.widget_speed_text, if (title.isBlank()) "Nota" else title)
+                views.setTextViewText(R.id.widget_distance_text, if (content.isBlank()) "Sem conteúdo" else content)
 
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             } catch (e: Throwable) {
@@ -62,9 +55,8 @@ class NormalWidgetProvider : AppWidgetProvider() {
 
         fun updateAllWidgets(
             context: Context,
-            speedKmH: Float,
-            distanceKm: Double = 0.0,
-            movingTimeMillis: Long = 0L
+            title: String = "Bloco Neon",
+            content: String = "Nenhuma nota recente"
         ) {
             try {
                 val appWidgetManager = AppWidgetManager.getInstance(context)
@@ -72,7 +64,7 @@ class NormalWidgetProvider : AppWidgetProvider() {
                 val allWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
 
                 for (widgetId in allWidgetIds) {
-                    updateAppWidget(context, appWidgetManager, widgetId, speedKmH, distanceKm, movingTimeMillis)
+                    updateAppWidget(context, appWidgetManager, widgetId, title, content)
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()

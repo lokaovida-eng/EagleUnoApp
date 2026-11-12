@@ -1,4 +1,3 @@
-
 pluginManagement {
     repositories {
         google {
@@ -23,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "VelocimetroAutomotivo"
+rootProject.name = "BlocoDeNotasNeonCartoon"
 include(":app")
