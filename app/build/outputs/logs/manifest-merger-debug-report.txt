@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-94:12
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:2:1-97:12
 MERGED from [io.coil-kt:coil-gif:2.5.0] /home/deck/.gradle/caches/9.6.0/transforms/50000643e7bccea6f14df4f6e08eac84/transformed/jetified-coil-gif-2.5.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.compose.material3:material3-android:1.2.0] /home/deck/.gradle/caches/9.6.0/transforms/756f6ab0382ce9dd44b45afbb1503742/transformed/jetified-material3-release/AndroidManifest.xml:17:1-22:12
 MERGED from [io.coil-kt:coil-compose:2.5.0] /home/deck/.gradle/caches/9.6.0/transforms/5a66ecbecc55b3529c4b73f7b6b27079/transformed/jetified-coil-compose-2.5.0/AndroidManifest.xml:2:1-7:12
@@ -86,8 +86,8 @@ ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xm
 	android:name
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:8:22-65
 application
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:10:5-92:19
-INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:10:5-92:19
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:10:5-95:19
+INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:10:5-95:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /home/deck/.gradle/caches/9.6.0/transforms/23ac937b832a0e407d3463afc1212494/transformed/jetified-ui-tooling-release/AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.compose.ui:ui-tooling-android:1.6.1] /home/deck/.gradle/caches/9.6.0/transforms/23ac937b832a0e407d3463afc1212494/transformed/jetified-ui-tooling-release/AndroidManifest.xml:22:5-26:19
 MERGED from [androidx.emoji2:emoji2:1.3.0] /home/deck/.gradle/caches/9.6.0/transforms/36ea671802a878cfa3f9407c32aca6c0/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:23:5-33:19
@@ -191,7 +191,7 @@ ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xm
 	android:name
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:64:17-58
 receiver#com.eagleuno.app.CoverScreenWidgetProvider
-ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:68:9-91:20
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:68:9-94:20
 	android:label
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:71:13-45
 	android:exported
@@ -228,6 +228,12 @@ ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xm
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:90:17-37
 	android:name
 		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:89:17-74
+meta-data#com.samsung.android.widget.provider.category
+ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:91:13-93:48
+	android:value
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:93:17-45
+	android:name
+		ADDED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml:92:17-76
 uses-sdk
 INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/deck/StudioProjects/EagleUnoApp/app/src/main/AndroidManifest.xml

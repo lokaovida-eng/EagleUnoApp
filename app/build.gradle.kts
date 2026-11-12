@@ -12,8 +12,8 @@ android {
         applicationId = "com.eagleuno.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 19
-        versionName = "1.9"
+        versionCode = 20
+        versionName = "2.0"
     }
 
     buildFeatures {
@@ -52,6 +52,7 @@ tasks.matching { it.name == "assembleDebug" }.configureEach {
         copy {
             from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
             into(rootDir)
+            rename { "VelocimetroAutomotivo.apk" }
         }
     }
 }
