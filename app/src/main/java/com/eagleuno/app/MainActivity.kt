@@ -135,6 +135,13 @@ fun CyberpunkDashboardScreen() {
         previousSpeed = speedKmH
     }
 
+    // Smooth speed float animation for fluid digital readout
+    val animatedSpeedKmH by animateFloatAsState(
+        targetValue = speedKmH,
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+        label = "SpeedReadoutAnimation"
+    )
+
     // Dynamic Speed Color based on Speed Range (Cyan -> Green -> Yellow -> Orange -> Red)
     val currentSpeedColor by animateColorAsState(
         targetValue = getSpeedColor(speedKmH),
@@ -365,7 +372,7 @@ fun CyberpunkDashboardScreen() {
                         verticalArrangement = Arrangement.Center
                     ) {
                         NeonSpeedText(
-                            speed = "${speedKmH.toInt()}",
+                            speed = "${animatedSpeedKmH.toInt()}",
                             fontSize = speedFontSize,
                             color = currentSpeedColor
                         )
@@ -563,21 +570,36 @@ fun NeonSpeedText(
         contentAlignment = Alignment.Center,
         modifier = modifier
     ) {
-        // Outer Glow Contour Effect (3D Neon Outline)
+        // Deep Soft Outer Aura Glow
         Text(
             text = speed,
             fontSize = fontSize,
             fontWeight = FontWeight.Black,
             fontStyle = FontStyle.Italic,
             fontFamily = FontFamily.Monospace,
-            color = color.copy(alpha = 0.4f),
+            color = color.copy(alpha = 0.25f),
             letterSpacing = (-1).sp,
             modifier = Modifier.graphicsLayer {
-                scaleX = 1.06f
-                scaleY = 1.06f
+                scaleX = 1.12f
+                scaleY = 1.12f
+                alpha = 0.5f
             }
         )
-        // Main Vibrant Neon Text
+        // Sharp Outer Glow Contour (3D Neon Outline)
+        Text(
+            text = speed,
+            fontSize = fontSize,
+            fontWeight = FontWeight.Black,
+            fontStyle = FontStyle.Italic,
+            fontFamily = FontFamily.Monospace,
+            color = color.copy(alpha = 0.5f),
+            letterSpacing = (-1).sp,
+            modifier = Modifier.graphicsLayer {
+                scaleX = 1.05f
+                scaleY = 1.05f
+            }
+        )
+        // Main Core Bright Neon Text
         Text(
             text = speed,
             fontSize = fontSize,
