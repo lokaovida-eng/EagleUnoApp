@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -46,6 +48,31 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="android.intent.category.SECONDARY_HOME" />
+                <category android:name="com.samsung.android.intent.category.COVER_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".VelocimetroActivity"
+            android:exported="true"
+            android:label="Velocímetro Automotivo HUD"
+            android:theme="@style/Theme.MyApplication"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize">
+
+            <meta-data
+                android:name="com.samsung.android.foldable.cover.display.support"
+                android:value="true" />
+            <meta-data
+                android:name="com.samsung.android.activity.showOnCover"
+                android:value="true" />
+            <meta-data
+                android:name="com.samsung.android.multistar.cover.display.support"
+                android:value="true" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="com.samsung.android.intent.category.COVER_LAUNCHER" />
             </intent-filter>
         </activity>
