@@ -45,7 +45,6 @@ class NormalWidgetProvider : AppWidgetProvider() {
                 val pendingIntent = PendingIntent.getActivity(context, 0, intent, flags)
 
                 views.setOnClickPendingIntent(R.id.widget_container, pendingIntent)
-                views.setImageViewResource(R.id.widget_bg_image, R.drawable.theme_red)
 
                 val speedFormatted = "${speedKmH.toInt()} km/h"
                 try { views.setTextViewText(R.id.widget_speed_text, speedFormatted) } catch (_: Exception) {}

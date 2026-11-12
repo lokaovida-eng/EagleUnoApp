@@ -1,52 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
     android:background="@drawable/bg_glass_widget"
-    android:padding="6dp">
+    android:padding="8dp">
 
-    <ImageView
-        android:id="@+id/widget_bg_image"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:src="@drawable/theme_red"
-        android:contentDescription="@string/app_name" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="VELOCÍMETRO GPS"
+        android:textColor="#00FFCC"
+        android:textSize="10sp"
+        android:textStyle="bold" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:background="#A6000000"
-        android:padding="6dp">
+    <TextView
+        android:id="@+id/widget_speed_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 km/h"
+        android:textColor="#FF0055"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="2dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="VELOCÍMETRO GPS"
-            android:textColor="#00FFCC"
-            android:textSize="9sp"
-            android:textStyle="bold" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="VELOCIDADE ATUAL"
+        android:textColor="#A0FFFFFF"
+        android:textSize="8sp"
+        android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/widget_speed_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0 km/h"
-            android:textColor="#FF0055"
-            android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="VELOCIDADE"
-            android:textColor="#80FFFFFF"
-            android:textSize="8sp"
-            android:textStyle="bold" />
-
-    </LinearLayout>
-
-</RelativeLayout>
+</LinearLayout>

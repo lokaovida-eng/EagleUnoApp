@@ -8,6 +8,6 @@
     android:initialLayout="@layout/widget_cover_layout"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen|keyguard"
-    android:previewImage="@drawable/theme_red"
+    android:previewImage="@drawable/ic_launcher_foreground"
     android:description="@string/app_name">
 </appwidget-provider>
