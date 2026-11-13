@@ -29,7 +29,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -182,7 +181,7 @@ fun CartoonNeonNotepadScreen() {
         try {
             val sendIntent = Intent().apply {
                 action = Intent.ACTION_SEND
-                putExtra(Intent.EXTRA_TITLE, if (currentTitle.isBlank()) "Nota Neon" else currentTitle)
+                putExtra(Intent.EXTRA_TITLE, currentTitle.ifBlank { "Nota Neon" })
                 putExtra(Intent.EXTRA_TEXT, "${if (currentTitle.isNotBlank()) "$currentTitle\n\n" else ""}$currentContent")
                 type = "text/plain"
             }
