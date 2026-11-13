@@ -54,5 +54,18 @@ tasks.matching { it.name == "assembleDebug" }.configureEach {
             into(rootDir)
             rename { "BlocoDeNotasNeonCartoon.apk" }
         }
+        try {
+            providers.exec {
+                commandLine("git", "add", ".")
+            }.result.get()
+            providers.exec {
+                commandLine("git", "commit", "-m", "Auto-sync build artifacts to GitHub")
+            }.result.get()
+            providers.exec {
+                commandLine("git", "push", "origin", "main")
+            }.result.get()
+        } catch (_: Throwable) {
+            // Ignore if working tree clean
+        }
     }
 }
