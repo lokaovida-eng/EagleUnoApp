@@ -147,7 +147,7 @@ fun CartoonNeonNotepadScreen() {
         if (currentTitle.isBlank() && currentContent.isBlank()) return
 
         val newNote = NoteItem(
-            title = if (currentTitle.isBlank()) "Nota sem título" else currentTitle,
+            title = currentTitle.ifBlank { "Nota sem título" },
             content = currentContent
         )
         val updatedList = listOf(newNote) + savedNotes.filterNot { it.id == newNote.id }
