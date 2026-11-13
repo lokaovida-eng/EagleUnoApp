@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Bloco de Notas Neon Cartoon</string>
+    <string name="velocimetro_app_name">Velocímetro Automotivo HUD</string>
+    <string name="widget_compass_default">[ 🧭 N ]</string>
+    <string name="widget_back_symbol">&lt;</string>
+    <string name="widget_reset_symbol">↺</string>
 </resources>

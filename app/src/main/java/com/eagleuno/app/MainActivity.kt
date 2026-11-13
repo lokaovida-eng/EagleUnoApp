@@ -3,6 +3,7 @@ package com.eagleuno.app
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
@@ -175,6 +176,23 @@ fun CartoonNeonNotepadScreen() {
         Toast.makeText(context, "Copiado para a área de transferência! 📋", Toast.LENGTH_SHORT).show()
     }
 
+    fun shareCurrentNote() {
+        triggerHaptic()
+        if (currentContent.isBlank()) return
+        try {
+            val sendIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TITLE, if (currentTitle.isBlank()) "Nota Neon" else currentTitle)
+                putExtra(Intent.EXTRA_TEXT, "${if (currentTitle.isNotBlank()) "$currentTitle\n\n" else ""}$currentContent")
+                type = "text/plain"
+            }
+            val shareIntent = Intent.createChooser(sendIntent, "Compartilhar Nota")
+            context.startActivity(shareIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun deleteNote(noteId: String) {
         triggerHaptic()
         val updatedList = savedNotes.filterNot { it.id == noteId }
@@ -299,7 +317,7 @@ fun CartoonNeonNotepadScreen() {
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Top
                 ) {
-                    // Note Title Field & Copy Button
+                    // Note Title Field & Actions (Copy 📋, Share 📤)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -333,14 +351,24 @@ fun CartoonNeonNotepadScreen() {
                         )
 
                         if (currentContent.isNotEmpty()) {
-                            Text(
-                                text = "📋",
-                                fontSize = 16.sp,
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .clickable { copyCurrentNote() }
-                                    .padding(4.dp)
-                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = "📋",
+                                    fontSize = 16.sp,
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .clickable { copyCurrentNote() }
+                                        .padding(4.dp)
+                                )
+                                Text(
+                                    text = "📤",
+                                    fontSize = 16.sp,
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .clickable { shareCurrentNote() }
+                                        .padding(4.dp)
+                                )
+                            }
                         }
                     }
 
