@@ -12,8 +12,8 @@ android {
         applicationId = "com.eagleuno.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 20
+        versionName = "2.0.0"
     }
 
     buildFeatures {
@@ -52,20 +52,19 @@ tasks.matching { it.name == "assembleDebug" }.configureEach {
         copy {
             from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
             into(rootDir)
-            rename { "BlocoDeNotasNeonCartoon.apk" }
+            rename { "VelocimetroAutomotivo.apk" }
         }
         try {
             providers.exec {
                 commandLine("git", "add", ".")
             }.result.get()
             providers.exec {
-                commandLine("git", "commit", "-m", "Auto-sync build artifacts to GitHub")
+                commandLine("git", "commit", "-m", "Publish latest VelocimetroAutomotivo.apk v2.0.0 to GitHub")
             }.result.get()
             providers.exec {
                 commandLine("git", "push", "origin", "main")
             }.result.get()
         } catch (_: Throwable) {
-            // Ignore if working tree clean
         }
     }
 }
